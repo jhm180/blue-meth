@@ -1,7 +1,13 @@
 package main
 
-import "sellslib"
+import (
+	"fmt"
+	"omellet/sellslib"
+)
 
 func main() {
-	sellslib.ImportLatest()
+	err := sellslib.ImportLatest()
+	if err != nil {
+		fmt.Println(err)
+	}
 }

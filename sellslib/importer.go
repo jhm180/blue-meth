@@ -1,6 +1,7 @@
 package sellslib
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -35,7 +36,7 @@ func getPath(csvType, date string) (filePath string) {
 
 func importCSV(csvType, date string) (filePath string, err error) {
 	filePath = getPath(csvType, date)
-	if !exists(filePath) && !exists(filePath + '.gz') {
+	if !exists(filePath) && !exists(filePath+".gz") {
 		var resp *http.Response = nil
 		if csvType != "Main" {
 			resp, err = http.PostForm(fmt.Sprintf(urlTemplate, csvType), url.Values{"username": {"omellet"}, "password": {"omellet5355"}})
@@ -102,15 +103,19 @@ func checkFileSize(file string) bool {
 	return false
 }
 
-func ImportLatest() (main, pear, round string) {
+func ImportLatest() error {
 	date := time.Now().Format("20060102")
-	main, err := importCSV("Main", date)
-	if err != nil {
-		fmt.Println(err)
+	files := []string{"Main", "Round", "Pear"}
+	for _, f := range files {
+		fname, err := importCSV(f, date)
+		if err != nil {
+			return err
+		}
+		if !checkFileSize(fname) {
+			return errors.New(fmt.Sprintf("File %s less than min size (%d bytes)", fname, minFileSize))
+		}
 	}
-	round, err = importCSV("Round", date)
-	pear, err = importCSV("Pear", date)
-	return
+	return nil
 }
 
 type Swearer interface {
