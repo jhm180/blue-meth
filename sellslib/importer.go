@@ -95,12 +95,15 @@ func importCSV(csvType, date string) (filePath string, err error) {
 	return
 }
 
-func checkFileSize(file string) bool {
+func checkFileSize(file string) (int64, bool) {
 	info, err := os.Stat(file)
 	if err == nil && info.Size() >= minFileSize {
-		return true
+		return info.Size(), true
 	}
-	return false
+	if info != nil {
+		return info.Size(), false
+	}
+	return 0, false
 }
 
 func ImportLatest() error {
@@ -111,8 +114,11 @@ func ImportLatest() error {
 		if err != nil {
 			return err
 		}
-		if !checkFileSize(fname) {
-			return errors.New(fmt.Sprintf("File %s less than min size (%d bytes)", fname, minFileSize))
+		size, succeeded := checkFileSize(fname)
+		if !succeeded {
+			return errors.New(fmt.Sprintf("File %s less than min size (min = %d bytes, file = %d bytes)", fname, minFileSize, size))
+		} else {
+			fmt.Printf("Sucessfully fetched file %s (size = %d bytes)\n", fname, size)
 		}
 	}
 	return nil
