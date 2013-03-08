@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"omellet/sellslib"
+	"whitepine/rapnet"
 )
 
 func main() {
