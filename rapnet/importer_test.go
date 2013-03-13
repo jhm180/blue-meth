@@ -1,4 +1,4 @@
-package sellslib
+package rapnet
 
 import (
 	"fmt"
