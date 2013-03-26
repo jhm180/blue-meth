@@ -104,6 +104,7 @@ insert into sells_events
             on s.lotnum = a.lotnum
         where not s.price = a.price;
 
+drop table active_sells;
 rename table sells_tmp to active_sells;
 commit;
 END
