@@ -2,34 +2,57 @@ use sells;
 drop table if exists sells;
 
 create table sells (
-LotNum bigint primary key,
-Owner text,
+Seller text,
+SellerId bigint,
+SellerCode text,
 Shape text,
-Carat text,
+Weight numeric,
 Color text,
+FancyColor text,
+FancyIntensity text,
+FancyOvertone text,
 Clarity text,
 CutGrade text,
-Price text,
-PctRap text,
-Cert text,
-Depth text,
-`Table` text,
-Girdle text,
-Culet text,
 Polish text,
-Sym text,
-Fluor text,
-Meas text,
-`Comment` text,
-NumStones text,
+Symmetry text,
+FluorescenceColor text,
+FluorescenceIntensity text,
+Fluorescence text,
+Measurements text,
+MeasLength numeric,
+MeasWidth numeric,
+MeasDepth numeric,
+Ratio numeric,
+Lab text,
 CertNum text,
 StockNum text,
-Make text,
-Date datetime,
+Treatment text,
+Price decimal,
+DiscountPrice decimal,
+CashPrice decimal,
+CashDiscountPct decimal,
+CashTotalPrice decimal,
+Availability text,
+DepthPct decimal,
+TablePct decimal,
+Girdle text,
+GirdleMin text,
+GirdleMax text,
+Culet text,
+CuletSize text,
+CuletCondition text,
+CrownHeight numeric,
+PavilionDepth numeric,
+Comment text,
 City text,
 State text,
 Country text,
-Image text
+IsMatchedPairSeparable boolean,
+PairStockNum text,
+ParcelNumStones int,
+CertificateURL text,
+LotNum bigint primary key,
+RecordDate datetime
 );
 
 drop table if exists sells_event_codes;
@@ -46,7 +69,7 @@ drop table if exists sells_events;
 create table sells_events (
 EventId bigint NOT NULL AUTO_INCREMENT,
 LotNum bigint NOT NULL,
-Price text,
+Price decimal,
 Date datetime,
 EventDate datetime,
 EventCode int NOT NULL,
@@ -55,6 +78,7 @@ INDEX USING HASH (LotNum),
 INDEX USING HASH (EventCode)
 );
 
+drop procedure track_changes if exists
 -- --------------------------------------------------------------------------------
 -- Routine DDL
 -- Note: comments before and after the routine body will not be stored by the server
@@ -102,7 +126,7 @@ insert into sells_events
         from sells s
         join sells_tmp a
             on s.lotnum = a.lotnum
-        where not s.price = a.price;
+        where not s.price = a.price
 
 drop table active_sells;
 rename table sells_tmp to active_sells;
