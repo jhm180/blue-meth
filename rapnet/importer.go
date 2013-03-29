@@ -113,8 +113,17 @@ func checkFileSize(file string) (int64, error) {
 	return 0, err
 }
 
-func ImportLatest() error {
-	date := time.Now().Format("20060102")
+func ImportLatest(args []string) (err error) {
+	var now time.Time
+	if len(args) > 0 {
+		now, err = time.Parse("20060102", args[0])
+		if err != nil {
+			return err
+		}
+	} else {
+		now = time.Now()
+	}
+	date := now.Format("20060102")
 	files := []string{"Main", "Round", "Pear"}
 	for _, f := range files {
 		fname, err := importCSV(f, date)
@@ -126,6 +135,9 @@ func ImportLatest() error {
 			return errors.New(fmt.Sprintf("File %s less than min size (min = %d bytes, file = %d bytes) (error = %s)", fname, minFileSize, size, err.Error()))
 		} else {
 			fmt.Printf("Sucessfully fetched file %s (size = %d bytes)\n", fname, size)
+			if f == "Main" {
+				LoadCSV(fname, &now)
+			}
 		}
 	}
 	return nil

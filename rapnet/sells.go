@@ -2,41 +2,45 @@ package rapnet
 
 import (
 	"database/sql"
-	"github.com/coopernurse/gorp"
+	// "github.com/coopernurse/gorp"
+	"compress/gzip"
+	"fmt"
 	"github.com/go-sql-driver/mysql"
+	"io"
 	"os"
+	"path"
 	"time"
 )
 
 type Sell struct {
-	LotNum    int64
-	Owner     string
-	Shape     string
-	Carat     string
-	Color     string
-	Clarity   string
-	CutGrade  string
-	Price     string
-	PctRap    string
-	Cert      string
-	Depth     string
-	Table     string
-	Girdle    string
-	Culet     string
-	Polish    string
-	Sym       string
-	Fluor     string
-	Meas      string
-	Comment   string
-	NumStones string
-	CertNum   string
-	StockNum  string
-	Make      string
-	Date      *time.Time
-	City      string
-	State     string
-	Country   string
-	Image     string
+	LotNum        int64
+	Owner         string
+	Shape         string
+	Carat         string
+	Color         string
+	Clarity       string
+	CutGrade      string
+	Price         string
+	PctRap        string
+	Cert          string
+	Depth         string
+	TableWidth    string
+	Girdle        string
+	Culet         string
+	Polish        string
+	Sym           string
+	Fluor         string
+	Meas          string
+	RapnetComment string
+	NumStones     string
+	CertNum       string
+	StockNum      string
+	Make          string
+	Date          *time.Time
+	City          string
+	State         string
+	Country       string
+	Image         string
 }
 
 type SellEventCode int
@@ -45,12 +49,11 @@ const (
 	Added SellEventCode = iota + 1
 	Removed
 	PriceChanged
-	BulkLoadQuery = "
-load data local infile 'LOAD DATA LOCAL INFILE Reader::sells_reader' into table {table_name}
-fields terminated by ',' enclosed by '\"' escaped by '\\'
+	BulkLoadQuery = `LOAD DATA LOCAL INFILE 'Reader::listing_reader' INTO TABLE %s
+fields terminated by ',' enclosed by '"' escaped by '\\'
 ignore 1 lines
-(               LotNum,
-               `Owner`,
+(              LotNum,
+               Owner,
                Shape,
                Carat,
                Color,
@@ -60,14 +63,14 @@ ignore 1 lines
                PctRap,
                Cert,
                Depth,
-               `Table`,
+               TableWidth,
                Girdle,
                Culet,
                Polish,
                Sym,
                Fluor,
                Meas,
-               `Comment`,
+               RapnetComment,
                NumStones,
                CertNum,
                StockNum,
@@ -77,7 +80,7 @@ ignore 1 lines
                State,
                Country,
                Image)
-set Date = str_to_date(@dateVal, '%%m/%%d/%%Y %%h:%%i:%%s %%p');"
+set Date = str_to_date(@dateVal, '%%m/%%d/%%Y %%h:%%i:%%s %%p');`
 )
 
 type SellEvent struct {
@@ -89,86 +92,80 @@ type SellEvent struct {
 	EventCode SellEventCode
 }
 
-func readerCreator(name string) io.ReadCloser {
-	return os.Open()
+func dumpTableCount(conn *sql.DB, tableName string) {
+	var count sql.NullInt64
+	r := conn.QueryRow(fmt.Sprintf("select count(*) from %s", tableName))
+	if r != nil && r.Scan(&count) == nil {
+		fmt.Printf("Table %s has %d rows\n", tableName, count.Int64)
+	}
 }
 
-blu
+func runCMD(conn *sql.DB, cmdText string) (bool, error) {
+	res, err := conn.Exec(cmdText)
+	if err != nil {
+		fmt.Printf("Error during command '%s': %s\n", cmdText, err)
+		return false, err
+	} else if rows, err := res.RowsAffected(); err == nil {
+		fmt.Printf("%d row(s) affected\n", rows)
+	} else {
+		fmt.Printf("RowsAffected error for cmd '%s': %s", cmdText, err.Error())
+	}
+	return true, nil
+}
 
 func LoadCSV(csvPath string, loadDate *time.Time) {
-	var conn sql.DB = nil
-	defer conn.Close()
+	var conn *sql.DB = nil
+	defer func() {
+		if conn != nil {
+			conn.Close()
+		}
+	}()
 
+	mysql.RegisterReaderHandler("listing_reader", func() io.Reader {
+		r, _ := os.Open(csvPath)
+		if path.Ext(csvPath) == ".gz" {
+			fmt.Printf("Opening gzip file %s\n", csvPath)
+			zipr, err := gzip.NewReader(r)
+			if err != nil {
+				panic(err.Error())
+			}
+			return zipr
+		}
+		return r
+	})
+	//mysql.RegisterLocalFile(csvPath)
 
-	mysql.RegisterReaderHandler("sells_loader", func () {
-		return os.Open(csvPath)
-		})
+	conn, err := sql.Open("mysql", "root:3lihu_r007@tcp(localhost:3306)/rapnet_listings?timeout=30m")
+	if conn == nil || err != nil {
+		fmt.Printf("Error opening db: %s", err.Error())
+	}
+	r := conn.QueryRow("select count(*) from active_listing;")
+	var c sql.NullInt64
+	if r != nil && r.Scan(&c) == nil && c.Int64 > 0 {
+		queries := []string{"drop table if exists listing_tmp;",
+			"create table listing_tmp like listing;",
+			fmt.Sprintf(BulkLoadQuery, "listing_tmp"),
+			"start transaction;",
+			fmt.Sprintf("call track_changes(date('%s'))", loadDate.Format("2006-01-02")),
+			"commit;"}
+		for _, q := range queries {
+			if ok, _ := runCMD(conn, q); !ok {
+				return
+			}
+		}
+	} else {
+		fmt.Printf("Initial load\n")
+		queries := []string{"truncate table active_listing;",
+			fmt.Sprintf(BulkLoadQuery, "active_listing"),
+			"insert into listing select * from active_listing;"}
+		for _, q := range queries {
+			if ok, _ := runCMD(conn, q); !ok {
+				return
+			}
+		}
+	}
+	dumpTableCount(conn, "active_listing")
+	dumpTableCount(conn, "listing")
+	dumpTableCount(conn, "listing_event")
 
-	conn = sql.Open('mymysql', "localhost*sells/root/3lihu_r007")
-
-   cmd.CommandText = "select count(*) from active_sells;";
-   object res = cmd.ExecuteScalar();
-   bool firstLoad = (int.Parse(res.ToString())) == 0;
-
-   string tableName = "active_sells";
-   if (!firstLoad)
-   {
-      cmd.CommandText = "create table sells_tmp like sells;";
-      cmd.ExecuteNonQuery();
-      tableName = "sells_tmp";
-   }
-   // bulkLoader.TableName = tableName;
-   // bulkLoader.FieldTerminator = ",";
-   // bulkLoader.EscapeCharacter = '\\';
-   // bulkLoader.FieldQuotationCharacter = '"';
-   // bulkLoader.NumberOfLinesToSkip = 1;
-   // bulkLoader.FileName = fileName;
-   // bulkLoader.Columns.AddRange(new[] {
-   //    "LotNum",
-   //    "Owner",
-   //    "Shape",
-   //    "Carat",
-   //    "Color",
-   //    "Clarity",
-   //    "CutGrade",
-   //    "Price",
-   //    "PctRap",
-   //    "Cert",
-   //    "Depth",
-   //    "`Table`",
-   //    "Girdle",
-   //    "Culet",
-   //    "Polish",
-   //    "Sym",
-   //    "Fluor",
-   //    "Meas",
-   //    "`Comment`",
-   //    "NumStones",
-   //    "CertNum",
-   //    "StockNum",
-   //    "Make",
-   //    "@dateVal",
-   //    "City",
-   //    "State",
-   //    "Country",
-   //    "Image"
-   // });
-   // bulkLoader.Expressions.Add("date = str_to_date(@dateVal, '%m/%d/%Y %h:%i:%s %p')");
-   // mysql.RegisterLocalFile(fileName)
-   // int loaded = bulkLoader.Load();
-   Log.Information("Bulk-loaded {0} rows from {1}", loaded, fileName);
-
-   if (!firstLoad)
-   {
-      cmd.CommandTimeout = 60 * 30; // up to a half hour
-      cmd.CommandText = "call track_changes(@loadDate);";
-      cmd.Parameters.Add(new MySqlParameter("@loadDate", MySqlDbType.DateTime));
-      cmd.Parameters["@loadDate"].Value = loadDate;
-      cmd.ExecuteNonQuery();
-   }
-   else
-   {
-      cmd.CommandText = "insert into sells select * from active_sells;";
-      cmd.ExecuteNonQuery();
-   }
 }

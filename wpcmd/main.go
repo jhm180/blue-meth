@@ -35,7 +35,7 @@ and load it into the whitepine db.
 }
 
 func importLatest(args []string) {
-	err := rapnet.ImportLatest()
+	err := rapnet.ImportLatest(args)
 	if err != nil {
 		fmt.Println(err)
 	}
