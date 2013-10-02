@@ -12,7 +12,7 @@ import (
 
 // Taken from the code for the revel command, which borrows from the "go" command.
 type Command struct {
-	Run                    func(args []string)
+	Run                    func(args []string) error
 	UsageLine, Short, Long string
 }
 
@@ -34,19 +34,23 @@ and load it into the whitepine db.
 `,
 }
 
-func importLatest(args []string) {
-	err := rapnet.ImportLatest(args)
-	if err != nil {
-		fmt.Println(err)
-	}
+var cmdDownload = &Command{
+	UsageLine: "download",
+	Short:     "Download the latest rapnet data file",
+	Long: `
+Connect to rapnet and download compressed CSV of the latest copy of the database, 
+and load it into the whitepine db.
+`,
 }
 
 func init() {
-	cmdImport.Run = importLatest
+	cmdImport.Run = rapnet.ImportLatest
+	cmdDownload.Run = rapnet.DownloadLatest
 }
 
 var commands = []*Command{
 	cmdImport,
+	cmdDownload,
 }
 
 func main() {
@@ -77,7 +81,10 @@ func main() {
 
 	for _, cmd := range commands {
 		if cmd.Name() == args[0] {
-			cmd.Run(args[1:])
+			if err := cmd.Run(args[1:]); err != nil {
+				fmt.Println(err.Error())
+				os.Exit(1)
+			}
 			return
 		}
 	}

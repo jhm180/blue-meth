@@ -63,7 +63,8 @@ func importCSV(csvType, date string) (filePath string, err error) {
 				fmt.Printf("Error: %v\n", err)
 				return
 			} else {
-				csvUrl := "http://technet.rapaport.com/HTTP/RapLink/download.aspx?ShapeIDs=1&Programmatically=yes"
+				// csvUrl := "http://technet.rapaport.com/HTTP/RapLink/download.aspx?ShapeIDs=1&Programmatically=yes"
+				csvUrl := "http://technet.rapaport.com/HTTP/RapLink/download.aspx?SortBy=Owner&White=1&Fancy=1&Programmatically=yes&Version=1.0"
 				tickBytes := []byte("ticket=")
 				tickBytes = append(tickBytes, body...)
 				var req *http.Request = nil
@@ -100,6 +101,11 @@ func importCSV(csvType, date string) (filePath string, err error) {
 		io.Copy(fOut, resp.Body)
 	}
 	return
+}
+
+func DownloadLatest(args []string) error {
+	_, err := importCSV("Main", time.Now().Format("20060102"))
+	return err
 }
 
 func checkFileSize(file string) (int64, error) {
