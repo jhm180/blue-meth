@@ -63,7 +63,7 @@ func importCSV(csvType, date string) (filePath string, err error) {
 				fmt.Printf("Error: %v\n", err)
 				return
 			} else {
-				csvUrl := "http://technet.rapaport.com/HTTP/RapLink/download.aspx?ShapeIDs=1&Programmatically=yes"
+				csvUrl := "http://technet.rapaport.com/HTTP/RapLink/download.aspx?Programmatically=yes"
 				tickBytes := []byte("ticket=")
 				tickBytes = append(tickBytes, body...)
 				var req *http.Request = nil
