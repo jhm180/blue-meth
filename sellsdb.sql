@@ -44,7 +44,7 @@ Description text not null
 );
 
 insert into listing_event_code (Description) values
-    ('Added'), ('Removed'), ('PriceChanged');
+    ('Added'), ('Removed'), ('PriceChanged'), ('ReAdded');
 
 create table listing_event (
 EventId bigint NOT NULL AUTO_INCREMENT,
