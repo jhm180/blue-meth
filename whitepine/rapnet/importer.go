@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	minFileSize  = 5000
+	minFileSize  = 50000
 	pathTemplate = "/home/oliver/rapnet_data/Rapnet_%s_%s.csv"
 	urlTemplate  = "https://technet.rapaport.com/HTTP/Prices/CSV2_%s.aspx"
 )
@@ -102,18 +102,13 @@ func importCSV(csvType, date string) (filePath string, err error) {
 	return
 }
 
-func DownloadLatest(args []string) error {
-	_, err := importCSV("Main", time.Now().Format("20060102"))
-	return err
-}
-
 func checkFileSize(file string) (int64, error) {
 	info, err := os.Stat(file)
 	if err == nil && info.Size() >= minFileSize {
 		return info.Size(), nil
 	}
 	if info != nil {
-		return info.Size(), nil
+		return info.Size(), errors.New("Bad file size")
 	}
 	return 0, err
 }
@@ -129,49 +124,24 @@ func ImportLatest(args []string) (err error) {
 		now = time.Now()
 	}
 	date := now.Format("20060102")
-	files := []string{"Main", "Round", "Pear"}
-	for _, f := range files {
-		fname, err := importCSV(f, date)
+	for i := 0; i < 3; i++ {
+		fmt.Printf("Attempt %d\n", i+1)
+		fname, err := importCSV("Main", date)
 		if err != nil {
 			return err
 		}
 		size, err := checkFileSize(fname)
 		if err != nil {
-			return errors.New(fmt.Sprintf("File %s less than min size (min = %d bytes, file = %d bytes) (error = %s)", fname, minFileSize, size, err.Error()))
-		} else {
-			fmt.Printf("Sucessfully fetched file %s (size = %d bytes)\n", fname, size)
-			if f == "Main" {
-				LoadCSV(fname, &now)
+			err = os.Remove(fname)
+			if err != nil {
+				break
 			}
+			err = errors.New(fmt.Sprintf("File %s less than min size (min = %d bytes, file = %d bytes) (error = %s)", fname, minFileSize, size, err.Error()))
+		} else {
+			err = nil
+			fmt.Printf("Successfully fetched file %s (size = %d bytes)\n", fname, size)
+			break
 		}
 	}
-	return nil
-}
-
-type Swearer interface {
-	Fuck() string
-	Shit() string
-}
-
-func runSwearer(s Swearer) {
-	fmt.Println(s.Fuck())
-	fmt.Println(s.Shit())
-}
-
-type SwearerImpl int
-
-func (f SwearerImpl) Fuck() string {
-	return "fuck"
-}
-
-func (f SwearerImpl) Shit() string {
-	return "shit"
-}
-
-func Echo() {
-	//today := time.Now()
-	//fmt.Printf("%s\n", today.Format("20060102"))
-
-	s := 1
-	runSwearer(SwearerImpl(s))
+	return err
 }
