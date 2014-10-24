@@ -43,6 +43,34 @@ def read_daily_file(file_date):
 # don't load fake cert nums
 bad_certs = { '123456789', '', '1234567890', '0' }
 
+def days_on_market(df):
+    # grp here is all rows matching the same (owner,certnum) key
+    # here we arrange by date
+    intervals = []
+    # the all_df frame is already sorted by date, so no need to re-sort here if it's the same df
+    #df.sortlevel(level='event_day', inplace=True)
+    grpd = df.groupby(level=['Owner','CertNum'])
+    t1 = datetime.now()
+    for grpname, vals in grpd:
+        # loop for each event_type/date entry in this stone's dataframe
+        # name is the original multiindex of the row prior to the groupby operation
+        for name, valseries in vals.iterrows(): 
+            # looks back through all events for a given stone and generates
+            # a new row for each interval on the market, indexed by certnum and owner
+            # (the group name, or label
+            et = name[0]
+            #print et
+            if et == ADD or et == READD:
+                date_added = name[3] 
+            elif et == REMOVE:
+                if date_added != None:
+                    date_removed = name[3]
+                    intervals.append([date_added, date_removed, grpname])
+                                    #index = pd.MultiIndex(levels = [grpname[0], grpname[1], date_removed])))
+
+    tuples = [iv[2] for iv in intervals]
+    return pd.DataFrame([iv[:2] for iv in intervals], index = pd.MultiIndex.from_tuples(tuples), columns = ['added','removed'])
+
 def filter_data(df):
     indices = []
     for k, grpdf in df.groupby(['Owner','CertNum']):
@@ -68,7 +96,7 @@ def cache_records(records, active, file_date):
           'records': records,
           'active':active
         }
-    pd.Series(atts).to_pickle(path.join(CACHE_PATH, 'rapnet_new.pkl'))
+    pd.Series(atts).to_pickle(path.join(CACHE_PATH, 'rapnet.pkl'))
     print 'cache write took {0}'.format(datetime.now() - now)
     #s = HDFStore(path.join(CACHE_PATH, 'rapnet.h5'), complevel=9, complib='blosc')
     #s['records'] = records
@@ -82,7 +110,7 @@ def load_cache():
     #    s = H5Store(h5path)
     #    atts = s['attributes'].to_dict()
     #    return s['records'], s['active'], atts['file_date']
-    pklpath = path.join(CACHE_PATH, 'rapnet_new.pkl')
+    pklpath = path.join(CACHE_PATH, 'rapnet.pkl')
     if path.exists(pklpath):
         s = pd.read_pickle(pklpath).to_dict()
         print 'cache load took {0}'.format(datetime.now() - now)
