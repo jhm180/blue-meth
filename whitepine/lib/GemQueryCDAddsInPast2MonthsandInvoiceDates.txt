@@ -1,0 +1,20 @@
+SELECT 
+ItemMaster.Description, 
+ItemMaster.ItemNo, 
+ItemMaster.DiamondShape, 
+ItemMaster.SizeNominal, 
+ItemMaster.DiamondColor, 
+ItemMaster.DiamondQuality, 
+ItemMaster.DiamondCutGrade, 
+ItemMaster.DiamondPolish, 
+ItemMaster.DiamondSymmetry, 
+ItemMaster.DiamondFluor, 
+InvoiceDetail.InvoiceNo, 
+ItemMaster.CreateDate, 
+InvoiceHeader.DatePrinted
+FROM 
+ItemMaster LEFT JOIN InvoiceDetail ON ItemMaster.ItemNo = InvoiceDetail.ItemNo LEFT JOIN InvoiceHeader ON InvoiceDetail.InvoiceNo = InvoiceHeader.InvoiceNo
+WHERE ItemMaster.CreateDate > '2014-02-01'
+AND ItemMaster.Type = 'CD'
+AND ItemMaster.CertAgency = 'GIA'
+AND ItemMaster.DiamondShape = 'R'
