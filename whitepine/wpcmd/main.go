@@ -1,13 +1,13 @@
 package main
 
 import (
+	"blue-meth/whitepine/rapnet"
 	"flag"
 	"fmt"
 	"io"
 	"os"
 	"strings"
 	"text/template"
-	"whitepine/rapnet"
 )
 
 // Taken from the code for the revel command, which borrows from the "go" command.
