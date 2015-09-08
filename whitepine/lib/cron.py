@@ -41,7 +41,7 @@ df = current_df[(current_df['Cert'] == 'GIA') \
 df['TotalPrice'] = df['Price'] * df['Carat'] #l.Price represents price per carat
 
 all_countries = ['USA', 'Canada', 'United Kingdom', 'Hong Kong', 'India', 'Belgium', 'Israel', 'Sri Lanka', 'Germany', \
-            'Thailand', 'UAE', 'China', 'South Africa', 'New Zealand', 'Australia', 'France', 'Singapore', 'Italy', 'Uzbekistan', 'Uganda'] 
+            'Thailand', 'UAE', 'China', 'South Africa', 'New Zealand', 'Australia', 'France', 'Singapore', 'Italy', 'Uzbekistan', 'Uganda']
 usa_only = ['USA']
 
 colors = ['D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M']
@@ -63,7 +63,7 @@ color_line_colors = {'D' : 'r' , 'E' : 'g', 'F' : 'b', 'G' :'c', 'H' : 'm', 'I' 
 
 
 ###################
-##### EMBIGGEN DF - ADD NEW COLUMN WITH A KEY, LOAD RAP PRICE LIST, THEN ADD NEW COLUMN AND POUPLATE COLUMN WITH RAP PRICE USING KEY 
+##### EMBIGGEN DF - ADD NEW COLUMN WITH A KEY, LOAD RAP PRICE LIST, THEN ADD NEW COLUMN AND POUPLATE COLUMN WITH RAP PRICE USING KEY
 ###################
 
 #df['RapPriceKey'] = 0
@@ -82,7 +82,7 @@ def rap_price_key(wt):
     elif wt >= 0.18 and wt <= 0.22:
         return 0.18
     elif wt >= 0.23 and wt <= 0.29:
-        return 0.23    
+        return 0.23
     elif wt >= 0.30 and wt <= 0.39:
         return 0.30
     elif wt >= 0.40 and wt <= 0.49:
@@ -100,9 +100,9 @@ def rap_price_key(wt):
     elif 2.00 <= wt and wt <= 2.99:
         return 2.00
     elif 3.00 <= wt and wt <= 3.99:
-        return 3.00        
+        return 3.00
     elif 4.00 <= wt and wt <= 4.99:
-        return 4.00        
+        return 4.00
     elif 5.00 <= wt and wt <= 9.99:
         return 5.00
     elif 10.00 <= wt:
@@ -122,7 +122,7 @@ def shape_disc_key(wt):
     elif wt >= 0.18 and wt <= 0.22:
         return 0.18
     elif wt >= 0.23 and wt <= 0.29:
-        return 0.23    
+        return 0.23
     elif wt >= 0.30 and wt <= 0.39:
         return 0.30
     elif wt >= 0.40 and wt <= 0.49:
@@ -150,9 +150,9 @@ def shape_disc_key(wt):
     elif 2.50 <= wt and wt <= 2.99:
         return 2.50
     elif 3.00 <= wt and wt <= 3.99:
-        return 3.00        
+        return 3.00
     elif 4.00 <= wt and wt <= 4.99:
-        return 4.00        
+        return 4.00
     elif 5.00 <= wt and wt <= 9.99:
         return 5.00
     elif 10.00 <= wt:
@@ -165,7 +165,7 @@ def rap_shape_key(shape):
         return 'BR'
     else:
         return 'PS'
-    
+
 def discount_shape_key(shape):
     if shape == 'Round':
         return 'RB'
@@ -176,12 +176,12 @@ def discount_shape_key(shape):
 
 df['RapPriceKey'] = df['Carat'].apply(rap_price_key)
 
-df['RapShapeKey'] = df['Shape'].apply(rap_shape_key)    
+df['RapShapeKey'] = df['Shape'].apply(rap_shape_key)
 
-df['ShapeDiscKey'] = df['Carat'].apply(shape_disc_key)    
+df['ShapeDiscKey'] = df['Carat'].apply(shape_disc_key)
 
-df['DiscountShapeKey'] = df['Shape'].apply(discount_shape_key)    
-    
+df['DiscountShapeKey'] = df['Shape'].apply(discount_shape_key)
+
 df['RapPricePerCarat'] = 0
 
 #import rappaport price list
@@ -192,7 +192,7 @@ groups = []
 # split into groups, where each row in a subgroup has the same Color, Clarity, and RapPriceKey
 for (shape, color, clarity, rapPriceKey), group in df.groupby(['RapShapeKey','Color','Clarity','RapPriceKey']):
     # using boolean indexing to select the matching price per carat from the df_rap_price_list
-    # df_rap_price_list.index is a multiindex; map() is a way of applying a function to each item in a sequence 
+    # df_rap_price_list.index is a multiindex; map() is a way of applying a function to each item in a sequence
     # (in this case, each multiindex object in the df_rap_price_list frame)
     # lambda idx: ... is a shorthand way of defining a function; could also do:
     ppc = df_rap_price_list[df_rap_price_list.index.map(lambda idx: idx[0] == shape and idx[1] == color and idx[2] == clarity and idx[3] == rapPriceKey)]
@@ -221,25 +221,25 @@ def ratio(measurement):
         measurementx = (measurement.replace('-','x'))
         dims = (measurementx.split('x'))
         side1 = float(dims[0])
-        side2 = float(dims[1])       
+        side2 = float(dims[1])
         if side1 == 0 or side2 == 0:
             return -999999
-        else: 
+        else:
             return max(side1/side2, side2/side1)
 
-    
+
 df['Ratio'] = df['Meas'].apply(ratio)
 
 def percent_string_fixer(s):
     if isinstance(s, str):
         return float(s.strip('% '))
     else:
-        return float(s)     
+        return float(s)
 
 df['Depth'] = df['Depth'].apply(percent_string_fixer)
 
 df['Table'] = df['Table'].apply(percent_string_fixer)
-        
+
 def depth_diff(depth):
     if depth >= 72.0:
         return depth - 72.0
@@ -247,12 +247,12 @@ def depth_diff(depth):
         return 64 - depth
     else:
         return 0
-    
+
 df['DepthDiff'] = df['Depth'].apply(depth_diff)
 
 def ratio_diff(ratio):
     return math.fabs(ratio - 1)
-    
+
 df['RatioDiff'] = df['Ratio'].apply(ratio_diff)
 
 def grade_rank(grade):
@@ -299,11 +299,11 @@ def princess_cut_grade(dataframe):
     #    return 'Good'
     else:
         return 'Fair'
-    
+
 df['Cut Grade'] = df.apply(princess_cut_grade, axis=1)
 
 ###################
-##### FITS POLYNOMIALS TO TOTAL PRICE DATA (X = CARAT WEIGHT, Y = TOTAL PRICE) AND EXPORTS THE FIT PARAMETERS TO EXCEL 
+##### FITS POLYNOMIALS TO TOTAL PRICE DATA (X = CARAT WEIGHT, Y = TOTAL PRICE) AND EXPORTS THE FIT PARAMETERS TO EXCEL
 ###################
 
 r01 = np.linspace(0.00, 0.03, 50)
@@ -379,7 +379,7 @@ output = {\
 def price_curve_genarator_all():
     #initiate pdf doc to save figures into
     pp = PdfPages('/home/oliver/Dropbox/whitepine/price_curves.pdf')
-    
+
     for z in range(len(shapes)):
         shape = shapes[z][0]
         cutgrade = shapes[z][1]
@@ -388,14 +388,14 @@ def price_curve_genarator_all():
         rap_shape_key = shapes[z][4]
         location = shapes[z][5]
         shape_key = shapes[z][6]
-        
+
         #loop through colors and clarties
         for k in colors_plot:
             color = k
             for l in clars_plot:
                 clar = l
-                
-                #create a smaller dataframe with a single combination of color and clarity 
+
+                #create a smaller dataframe with a single combination of color and clarity
                 df_temp = df[ \
                             (df['Shape'] == shape) \
                             & (df['Carat'] >= 0.23) \
@@ -410,7 +410,7 @@ def price_curve_genarator_all():
                             & (df['Cert'] == 'GIA') \
                             & (df['Price'] > 0) \
                             ]
-                
+
                 #loop through carat bins that have a bunch of preset parameters
                 for i in range(len(carat_bins)):
                     fxn_min = carat_bins[i][0]
@@ -423,24 +423,24 @@ def price_curve_genarator_all():
                     plot_linspace = carat_bins[i][7]
                     fxn_plus_min = carat_bins[i][1]
                     fxn_plus_max = carat_bins[i][1]+.5
-                    
-                    
+
+
                     #break up color/clarity dataframe into smaller chunks based on carat weight
                     df_fxn_range_pre = df_temp[(df_temp['Carat'] >= fxn_min) & (df_temp['Carat'] < fxn_max)]
-                    
+
                     #get cheapest two stones that weigh more than the current weight bin, append them to the smaller color/clarity dataframe
                     df_fxn_range_plus_pre = df_temp[(df_temp['Carat'] >= fxn_plus_min) & (df_temp['Carat'] < fxn_plus_max)]
                     df_fxn_range_plus = df_fxn_range_plus_pre.sort(['TotalPrice'],ascending=True)
                     if degree == 2:
                         df_fxn_range = pd.concat([df_fxn_range_pre, df_fxn_range_plus[:2]])
-                    elif degree == 1: 
+                    elif degree == 1:
                         df_fxn_range = pd.concat([df_fxn_range_pre, df_fxn_range_plus[:1]])
                     else:
                         pass
                     #df_fxn_range = pd.concat([df_fxn_range_pre, df_fxn_range_plus[:2]])
                     df_plot_range = df_temp[(df_temp['Carat'] >= plot_min) & (df_temp['Carat'] < plot_max)]
-                    
-                    
+
+
                     #exception handling for certain criteria... exclude small and large stones, exclude lesser clarities, exclude empty categories
                     #exclude categories with only a few stones (minimum stone limits set here are arbitrary)
                     #create dummy entries in the output dictionary for the exlcluded categories
@@ -457,7 +457,7 @@ def price_curve_genarator_all():
                         or len(df_fxn_range) == 0
                         or len(df_plot_range) == 0
                         ):
-                        
+
                         output['Shape'].append(shape_key)
                         output['Color'].append(color)
                         output['Clarity'].append(clar)
@@ -474,18 +474,18 @@ def price_curve_genarator_all():
                         output['ResidCept'].append(-999999)
 
                     else:
-                        #calculate fit parameters for best fit polynomial curve 
+                        #calculate fit parameters for best fit polynomial curve
                         fit_params = np.poly1d(np.polyfit(df_fxn_range['Carat'],df_fxn_range['TotalPrice'], degree, full=False))
-    
+
                         #Calculate the standard deviation of list prices versus model projected prices in terms of pct rap (i.e., % difference of model price and listed price from rap list price)
                         total = 0
                         for m in range(len(df_plot_range)):
                             total += ((np.polyval(fit_params, df_plot_range['Carat'].iloc[m]) - df_plot_range['TotalPrice'].iloc[m])/np.polyval(fit_params, df_plot_range['Carat'].iloc[m]))**2
                         curve_shift = math.sqrt(total / len(df_plot_range))
-                     
+
                         #Calculate a residual value - the % difference between predicted price and list price
                         df_plot_range['Residual'] = (df_plot_range['TotalPrice']-np.polyval(fit_params, df_plot_range['Carat']))/df_plot_range['TotalPrice']
-                        
+
                         resid_slope = np.poly1d(np.polyfit(df_plot_range['Carat'],df_plot_range['Residual'], 1, full=False))
 
                         #Store fit parameters in a dictionary
@@ -510,7 +510,7 @@ def price_curve_genarator_all():
                             output['Clarity'].append(clar)
                             output['CurveKey'].append(curve_key)
                             output['CurveRangeMin'].append(plot_min)
-                            output['CurveRangeMax'].append(plot_max)                        
+                            output['CurveRangeMax'].append(plot_max)
                             output['PolyDegree'].append(degree)
                             output['Px2'].append(fit_params[2])
                             output['Px1'].append(fit_params[1])
@@ -537,40 +537,40 @@ def price_curve_genarator_all():
 
                         #load rap price for color/clarity/weight combination
                         #rap_price = df_rap_price_list['PricePerCar'].ix[rap_shape_key].ix[color].ix[clar].ix[rap_price_key]
-                        
+
                         ###plot best fit curves, best fit curve less the stdev calc, & scatter of price v weight
-                        
+
                         #DEACTIVATED
                         plt.subplot(2,1,1)
                         plt.plot(rc_bins[i], np.polyval(fit_params, plot_linspace), color = line_colors[i])
                         plt.plot(rc_bins[i], (np.polyval(fit_params, plot_linspace) - np.polyval(fit_params, plot_linspace)*curve_shift), '--', color=line_colors[i])
                         plt.scatter(df_plot_range['Carat'], df_plot_range['TotalPrice'], color=line_colors[i], alpha=.7)
-                        
+
                         #calculate a curve that will display on the residual chart showing the difference between the model price and the price of a stone 1 stdev away from the model price
                         curve_shift_resid = -(np.polyval(fit_params, plot_linspace) - np.polyval(fit_params, plot_linspace)*(1-curve_shift))/np.polyval(fit_params, plot_linspace)
-                        
+
                         #plot residuals
                         plt.subplot(2,1,2)
                         plt.plot(plot_linspace, curve_shift_resid, '--', color=line_colors[i])
                         plt.scatter(df_plot_range['Carat'],df_plot_range['Residual'],color=line_colors[i],alpha=.7)
                         plt.axhline(linewidth=1, color='k')
-                        
-                    
+
+
                 #set plot limits - exception handling for empty dataframes
-                
+
                 if len(df_temp) == 0:
                     ymin = 0
                     ymax = 10000
                 else:
                     ymin = min(df_temp['TotalPrice'])*0.95
                     ymax = max(df_temp['TotalPrice'])*1.05
-                
+
                 #label and format plots
-                #plt.rcParams['figure.figsize'] = 9, 9                
+                #plt.rcParams['figure.figsize'] = 9, 9
                 if clar in ['SI3', 'I2', 'I3']:
                     pass
-                else: 
-                    plt.rcParams['figure.figsize'] = 9, 9      
+                else:
+                    plt.rcParams['figure.figsize'] = 9, 9
                     #plt.subplot(2,1,1)
                     plt.title(shape+'- 0.30 - 2.99 carat - '+color+' - '+clar, fontsize = 16)
                     plt.ylabel('Total Price of Stone', fontsize = 16)
@@ -578,24 +578,24 @@ def price_curve_genarator_all():
                     #plt.ylim(0,10000)
                     plt.annotate("N = %s stones" %(len(df_temp)), xy=(1, 0), xycoords='axes fraction', fontsize=16, xytext=(-5, 5), textcoords='offset points', ha='right', va='bottom')
                     plt.xlim(0.23,3.00)
-                    
+
                     plt.subplot(2,1,2)
                     plt.title('Residuals', fontsize = 16)
                     plt.ylabel('% Diff Btwn Actual and Model Price', fontsize = 16)
                     plt.xlabel('Carat Weight', fontsize = 16)
-                    plt.ylim(-.5,.5) 
+                    plt.ylim(-.5,.5)
                     plt.xlim(0.23,3.00)
-                       
+
                 plt.savefig(pp, format='pdf') #save figure to pdf
-                plt.clf() #clear the figure for next iteration  
-                
+                plt.clf() #clear the figure for next iteration
+
     pp.close() #close pdf
-    
-    #create a dataframe that contains the curve fit parameters 
+
+    #create a dataframe that contains the curve fit parameters
     arrays = [output['Shape'], output['Color'], output['Clarity'], output['CurveKey'], output['CurveRangeMin']]
     tuples = zip(*arrays)
     index = pd.MultiIndex.from_tuples(tuples)
-    
+
     output2 = {}
     output2 = { \
                 'CurveRangeMax' : output['CurveRangeMax'], \
@@ -608,15 +608,15 @@ def price_curve_genarator_all():
                 'ResidSlope': output['ResidSlope'], \
                 'ResidCept': output['ResidCept'] \
                 }
-    
+
     df_output = pd.DataFrame(output2, index = index, columns = ['PolyDegree', 'Px2', 'Px1', 'Px0', 'StdDev', 'NumStones', 'ResidSlope', 'ResidCept'] )
-    
+
     #df_output.to_excel('/home/oliver/Dropbox/whitepine/price_curve_params.csv')
-        
+
     return df_output
-    
-df_price_curves = price_curve_genarator_all()                
-       
+
+df_price_curves = price_curve_genarator_all()
+
 
 ##################
 ##### GO OVER PRICE PARAMETERS AND THROW OUT MISSHAPEN CURVES - NEEDS TO BE UPDATED USING GROUPBY METHODS TO IMPROVE PERFORMANCE
@@ -638,7 +638,7 @@ for i in range(len(df_price_curves)):
 
 writer = pd.ExcelWriter('/home/oliver/Dropbox/whitepine/prdt.xlsx')
 temp = df_price_curves.reset_index()
-temp.columns = ['Shape','Color','Clarity','CurveKey','CurveRangeMin','PolyDegree','Px2','Px1','Px0','StdDev','NumStones', 'ResidSlope', 'ResidCept'] 
+temp.columns = ['Shape','Color','Clarity','CurveKey','CurveRangeMin','PolyDegree','Px2','Px1','Px0','StdDev','NumStones', 'ResidSlope', 'ResidCept']
 temp['Idx'] = temp.apply(lambda x: '%s_%s_%s_%s' %(x['Shape'], x['Color'], x['Clarity'], x['CurveKey']), axis=1)
 temp = temp.set_index(['Idx'])
 temp.to_excel(writer, 'PRICE PARAMS')
@@ -682,7 +682,7 @@ def price_curve_key(wt):
     elif wt >= 0.18 and wt <= 0.22:
         return 'r18'
     elif wt >= 0.23 and wt <= 0.29:
-        return 'r23'   
+        return 'r23'
     elif wt >= 0.30 and wt <= 0.39:
         return 'r30'
     elif wt >= 0.40 and wt <= 0.49:
@@ -704,9 +704,9 @@ def price_curve_key(wt):
     elif 2.00 <= wt and wt <= 2.99:
         return 'rc2'
     elif 3.00 <= wt and wt <= 3.99:
-        return 'rc3'       
+        return 'rc3'
     elif 4.00 <= wt and wt <= 4.99:
-        return 'rc4'       
+        return 'rc4'
     elif 5.00 <= wt and wt <= 9.99:
         return 'rc5'
     elif 10.00 <= wt:
@@ -730,7 +730,7 @@ for (discountshapekey, color, clarity, priceCurveKey), group in df.groupby(['Dis
         group['Px1'] = px['Px1'].iloc[0]
         group['Px0'] = px['Px0'].iloc[0]
         group['StdDev'] = px['StdDev'].iloc[0]
-    else: 
+    else:
         group['PolyDegree'] = px['PolyDegree']
         group['Px2'] = -999999
         group['Px1'] = -999999
@@ -835,12 +835,12 @@ for p in range(len(discount_bins)):
     min_carat = discount_bins[p][0]
     max_carat = discount_bins[p][1]
     for i in range(len(discounts)):
-        df_discount = pd.DataFrame(0, index=colors, columns=clars_tot, dtype=np.float64) 
-        df_avg_discount = pd.DataFrame(0, index=colors, columns=clars_blnk, dtype=np.float64) 
-        df_med_discount = pd.DataFrame(0, index=colors, columns=clars_blnk, dtype=np.float64) 
-        df_std_discount = pd.DataFrame(0, index=colors, columns=clars_blnk, dtype=np.float64)     
-        df_number_of_stones = pd.DataFrame(0, index=colors, columns=clars, dtype=np.float64) 
-    
+        df_discount = pd.DataFrame(0, index=colors, columns=clars_tot, dtype=np.float64)
+        df_avg_discount = pd.DataFrame(0, index=colors, columns=clars_blnk, dtype=np.float64)
+        df_med_discount = pd.DataFrame(0, index=colors, columns=clars_blnk, dtype=np.float64)
+        df_std_discount = pd.DataFrame(0, index=colors, columns=clars_blnk, dtype=np.float64)
+        df_number_of_stones = pd.DataFrame(0, index=colors, columns=clars, dtype=np.float64)
+
         for m in range(len(discount_groups)):
             color = discount_groups[m][0]
             clar = discount_groups[m][1]
@@ -852,7 +852,7 @@ for p in range(len(discount_bins)):
             location = discounts[i][5]
             shape = discounts[i][6]
             shape_tag = discounts[i][7]
-            
+
             df_temp = df[ \
                 (df['Carat'] >= min_carat) \
                 & (df['Carat'] < max_carat) \
@@ -867,12 +867,12 @@ for p in range(len(discount_bins)):
                 & (df['Px2'] != -999999)\
                 ] #
 
-            avg_discount = np.mean(df_temp['ExactPctRap'] - df_temp['PredictedPctRap'])   
+            avg_discount = np.mean(df_temp['ExactPctRap'] - df_temp['PredictedPctRap'])
             med_discount = np.median(df_temp['ExactPctRap'] - df_temp['PredictedPctRap'])
             std_discount = np.std(df_temp['ExactPctRap'] - df_temp['PredictedPctRap'])
             num_stones = len(df_temp)
 
-            if shape == 'Round':            
+            if shape == 'Round':
                 if len(df_temp) == 0:
                     for j in discount_groups[m][0]:
                         for k in discount_groups[m][1]:
@@ -882,16 +882,16 @@ for p in range(len(discount_bins)):
                             df_std_discount.ix[j,k] = -999999
                             discount_output['Tag'].append("%s_%sct_%sct_%s_%s_%s" %(shape_tag,min_carat,max_carat,j,k,tag))
                             discount_output['RB Avg Discount'].append(-999999)
-                            discount_output['RB Median Discount'].append(-999999) 
+                            discount_output['RB Median Discount'].append(-999999)
                             discount_output['RB Discount Stdev'].append(-999999)
-                            discount_output['Num Stones'].append(0)                   
+                            discount_output['Num Stones'].append(0)
                             #discount_output['PR Intercept Coefficient'].append(-999999)
                             discount_output['PR DepthDiff Coefficient'].append(-999999)
                             discount_output['PR Sym Rank Coefficient'].append(-999999)
                             #discount_output['PR Intercept T-Stat'].append(-999999)
                             discount_output['PR DepthDiff T-Stat'].append(-999999)
-                            discount_output['PR Sym Rank T-Stat'].append(-999999)                       
-                
+                            discount_output['PR Sym Rank T-Stat'].append(-999999)
+
                 elif len(df_temp) <= 7:
                     for j in discount_groups[m][0]:
                         for k in discount_groups[m][1]:
@@ -909,36 +909,36 @@ for p in range(len(discount_bins)):
                             discount_output['PR Sym Rank Coefficient'].append(-999999)
                             #discount_output['PR Intercept T-Stat'].append(-999999)
                             discount_output['PR DepthDiff T-Stat'].append(-999999)
-                            discount_output['PR Sym Rank T-Stat'].append(-999999)                       
-                            
-                else:    
+                            discount_output['PR Sym Rank T-Stat'].append(-999999)
+
+                else:
                     for j in discount_groups[m][0]:
                         for k in discount_groups[m][1]:
                             df_number_of_stones.ix[j,k] = num_stones
                             df_avg_discount.ix[j,k] = avg_discount
                             df_med_discount.ix[j,k] = med_discount
-                            df_std_discount.ix[j,k] = std_discount                
+                            df_std_discount.ix[j,k] = std_discount
                             discount_output['Tag'].append("%s_%sct_%sct_%s_%s_%s" %(shape_tag,min_carat,max_carat,j,k,tag))
                             discount_output['RB Avg Discount'].append(avg_discount)
-                            discount_output['RB Median Discount'].append(med_discount)         
-                            discount_output['RB Discount Stdev'].append(std_discount)     
+                            discount_output['RB Median Discount'].append(med_discount)
+                            discount_output['RB Discount Stdev'].append(std_discount)
                             discount_output['Num Stones'].append(len(df_temp))
                             #discount_output['PR Intercept Coefficient'].append(-999999)
                             discount_output['PR DepthDiff Coefficient'].append(-999999)
                             discount_output['PR Sym Rank Coefficient'].append(-999999)
                             #discount_output['PR Intercept T-Stat'].append(-999999)
                             discount_output['PR DepthDiff T-Stat'].append(-999999)
-                            discount_output['PR Sym Rank T-Stat'].append(-999999)                       
+                            discount_output['PR Sym Rank T-Stat'].append(-999999)
 
-            elif shape == 'Princess':               
+            elif shape == 'Princess':
                 if len(df_temp) == 0:
                     for j in discount_groups[m][0]:
                         for k in discount_groups[m][1]:
                             df_number_of_stones.ix[j,k] = 0
                             discount_output['Tag'].append("%s_%sct_%sct_%s_%s_%s" %(shape_tag,min_carat,max_carat,j,k,tag))
                             discount_output['RB Avg Discount'].append(-999999)
-                            discount_output['RB Median Discount'].append(-999999) 
-                            discount_output['RB Discount Stdev'].append(-999999)                            
+                            discount_output['RB Median Discount'].append(-999999)
+                            discount_output['RB Discount Stdev'].append(-999999)
                             #discount_output['PR Intercept Coefficient'].append(-999999)
                             discount_output['PR DepthDiff Coefficient'].append(-999999)
                             discount_output['PR Sym Rank Coefficient'].append(-999999)
@@ -946,24 +946,24 @@ for p in range(len(discount_bins)):
                             #discount_output['PR Intercept T-Stat'].append(-999999)
                             discount_output['PR DepthDiff T-Stat'].append(-999999)
                             discount_output['PR Sym Rank T-Stat'].append(-999999)
-                
+
                 elif len(df_temp) <= 12:
                     for j in discount_groups[m][0]:
                         for k in discount_groups[m][1]:
                             df_number_of_stones.ix[j,k] = len(df_temp)
                             discount_output['Tag'].append("%s_%sct_%sct_%s_%s_%s" %(shape_tag,min_carat,max_carat,j,k,tag))
                             discount_output['RB Avg Discount'].append(-999999)
-                            discount_output['RB Median Discount'].append(-999999) 
-                            discount_output['RB Discount Stdev'].append(-999999)                            
+                            discount_output['RB Median Discount'].append(-999999)
+                            discount_output['RB Discount Stdev'].append(-999999)
                             #discount_output['PR Intercept Coefficient'].append(-999999)
                             discount_output['PR DepthDiff Coefficient'].append(-999999)
                             discount_output['PR Sym Rank Coefficient'].append(-999999)
                             discount_output['Num Stones'].append(len(df_temp))
                             #discount_output['PR Intercept T-Stat'].append(-999999)
                             discount_output['PR DepthDiff T-Stat'].append(-999999)
-                            discount_output['PR Sym Rank T-Stat'].append(-999999)                       
+                            discount_output['PR Sym Rank T-Stat'].append(-999999)
 
-                else:            
+                else:
                     df_regress_temp = df_temp[(df_temp['PredictedPercentDiff'] <= 0.1) & (df_temp['Carat'] >= .4)]
                     df_princess_regression = pd.DataFrame([df_regress_temp['PredictedPercentDiff'],df_regress_temp['DepthDiff'],df_regress_temp['SymRank']]).transpose()
                     #reg_results = np.poly1d(np.polyfit(, 1, full=False))
@@ -976,46 +976,46 @@ for p in range(len(discount_bins)):
                             df_number_of_stones.ix[j,k] = len(df_temp)
                             discount_output['Tag'].append("%s_%sct_%sct_%s_%s_%s" %(shape_tag,min_carat,max_carat,j,k,tag))
                             discount_output['RB Avg Discount'].append(-999999)
-                            discount_output['RB Median Discount'].append(-999999) 
-                            discount_output['RB Discount Stdev'].append(-999999)                            
+                            discount_output['RB Median Discount'].append(-999999)
+                            discount_output['RB Discount Stdev'].append(-999999)
                             #discount_output['PR Intercept Coefficient'].append(reg_results.beta['intercept'])
                             discount_output['PR DepthDiff Coefficient'].append(reg_results.beta['DepthDiff'])
                             discount_output['PR Sym Rank Coefficient'].append(reg_results.beta['SymRank'])
                             discount_output['Num Stones'].append(len(df_temp))
                             #discount_output['PR Intercept T-Stat'].append(reg_results.t_stat['intercept'])
                             discount_output['PR DepthDiff T-Stat'].append(reg_results.t_stat['DepthDiff'])
-                            discount_output['PR Sym Rank T-Stat'].append(reg_results.t_stat['SymRank'])  
-                
-                
+                            discount_output['PR Sym Rank T-Stat'].append(reg_results.t_stat['SymRank'])
+
+
         #name column headers of each indiviidual dataframe and combine them into a single large dataframe that can be ouput into excel
-        #df_avg_discount.columns = clars_avg 
+        #df_avg_discount.columns = clars_avg
         #df_med_discount.columns = clars_med
         #df_std_discount.columns = clars_std
         #df_number_of_stones.columns = clars_num
-    
-        #for z in clars_avg: 
+
+        #for z in clars_avg:
         #    df_discount[z] =  df_avg_discount[z]
-        #for z in clars_med: 
+        #for z in clars_med:
         #    df_discount[z] =  df_med_discount[z]
-        #for z in clars_std: 
+        #for z in clars_std:
         #    df_discount[z] =  df_std_discount[z]
-        #for z in clars_num: 
+        #for z in clars_num:
         #    df_discount[z] =  df_number_of_stones[z]
-            
+
         #df_discount['Blank_Col_avg'] = colors
         #df_discount['Blank_Col_med'] = colors
-        #df_discount['Blank_Col_std'] = colors    
-        
+        #df_discount['Blank_Col_std'] = colors
+
         #pd.DataFrame(["", "%s ct-%s ct-%s-%s" %(min_carat,max_carat,shape, tag)]).to_csv('/home/oliver/Dropbox/whitepine/discounts_tables1.csv', mode = 'a', header=False)
         #pd.DataFrame(clars_tot).T.to_csv('/home/oliver/Dropbox/whitepine/discounts_tables1.csv', mode = 'a', header=False)
         #df_discount.to_csv('/home/oliver/Dropbox/whitepine/discounts_tables1.csv', mode = 'a', header=False)
 
-#print discount_output        
-        
+#print discount_output
+
 arrays = [discount_output['Tag']]
 tuples = zip(*arrays)
-index = pd.MultiIndex.from_tuples(tuples)        
-        
+index = pd.MultiIndex.from_tuples(tuples)
+
 df_discount_output = pd.DataFrame(discount_output, index=index,  columns=['RB Avg Discount', 'RB Median Discount', 'RB Discount Stdev', \
                          'PR DepthDiff Coefficient', 'PR Sym Rank Coefficient', \
                          'PR DepthDiff T-Stat', 'PR Sym Rank T-Stat', 'Num Stones'])
