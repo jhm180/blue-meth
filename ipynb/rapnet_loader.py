@@ -41,14 +41,32 @@ COL_NAMES_20141218 = [
 'City','State','Country','Certificate URL','Image','Depth Percent','LotNum','CertNum1','Fluor'
 ]
 #
-#Seller Name,RapNet Account ID,Name Code,Shape,Weight,Color,Clarity,Cut,Polish,
-#Symmetry,Fluorescence Color,Fluorescence Intensity,Measurements,Meas Length,
-#Meas Width,Meas Depth,Lab,Certificate Number,Stock Number,Price Per Carat,
-#Price Percentage,Depth,Table,Girdle,Culet,Culet Size,Culet Condition,
-#Crown,Pavilion,City,State,Country,Number of Diamonds,Certificate URL,
-#Image URL,Date Updated,Pavilion Angle,Table Percent,
-#Supplier country,Depth Percent,Crown Angle,Crown Height,Diamond ID
+DOWNLOADED_COL_NAMES_20150104 = """Seller Name,RapNet Account ID,Name Code,Shape,Weight,Color,Clarity,Cut,Polish,
+Symmetry,Fluorescence Color,Fluorescence Intensity,Measurements,Meas Length,
+Meas Width,Meas Depth,Lab,Certificate Number,Stock Number,Price Per Carat,
+Price Percentage,Depth,Table,Girdle,Culet,Culet Size,Culet Condition,
+Crown,Pavilion,City,State,Country,Number of Diamonds,Certificate URL,
+Image URL,Date Updated,Pavilion Angle,Table Percent,
+Supplier country,Depth Percent,Crown Angle,Crown Height,Diamond ID"""
+
 COL_NAMES_20150104 = [
+'SellerName','RapnetAccount','Owner','Shape','Carat','Color','Clarity','Cut Grade','Polish',
+'Sym','FlourColor','Fluor','Meas','Meas Len','MeasWidth','MeasDepth','Cert','CertNum','StockNum',
+'Price','PctRap',
+'DepthStr','TableStr','Girdle','Culet','Culet Size','Culet Condition','Crown','Pavilion',
+'City','State','Country','NumStones','Certificate URL','Image','DateUpdated','Pavilion Angle',
+'Table','SupplierCountry','Depth','Crown Angle','CrownHeight','LotNum'
+]
+
+DOWNLOADED_COL_NAMES_20170627 = """Seller Name,RapNet Account ID,Name Code,Shape,Weight,Color,Clarity,Cut,Polish,
+Symmetry,Fluorescence Color,Fluorescence Intensity,Measurements,Meas Length,
+Meas Width,Meas Depth,Lab,Certificate Number,Stock Number,Price Per Carat,
+Price Percentage,Depth,Table,Girdle,Culet,Culet Size,Culet Condition,
+Crown,Pavilion,City,State,Country,Number of Diamonds,Certificate URL,
+Image URL,Date Updated,Pavilion Angle,Table Percent,
+Supplier country,Depth Percent,Crown Angle,Crown Height,Diamond ID"""
+
+COL_NAMES_20170627 = [
 'SellerName','RapnetAccount','Owner','Shape','Carat','Color','Clarity','Cut Grade','Polish',
 'Sym','FlourColor','Fluor','Meas','Meas Len','MeasWidth','MeasDepth','Cert','CertNum','StockNum',
 'Price','PctRap',
@@ -64,6 +82,7 @@ USE_COLS = ['LotNum', 'Owner', 'Shape', 'Carat', 'Color', 'Clarity', 'Cut Grade'
 NEW_FMT_DATE = datetime(2014, 12, 4)
 NEW_FMT_DATE2 = datetime(2014, 12, 17)
 NEW_FMT_DATE3 = datetime(2015, 1, 3)
+NEW_FMT_DATE4 = datetime(2017, 6, 27)
 
 def parse_pct(f):
     fv = f.strip()
@@ -73,7 +92,8 @@ def parse_pct(f):
         fv = fv[:-1]
     return np.float64(fv)
 
-def read_daily_file(file_date, cur_day):
+def read_daily_file(cur_day):
+    file_date = cur_day.strftime('%Y%m%d')
     compression = None
     daily_file = path.join(DATA_PATH, 'Rapnet_{0}_Main.csv'.format(file_date))
     if not path.exists(daily_file):
@@ -82,15 +102,24 @@ def read_daily_file(file_date, cur_day):
     if not path.exists(daily_file):
         return []
     try:
-        if cur_day > NEW_FMT_DATE3:
+        if cur_day > NEW_FMT_DATE4:
+            print "loading date {0} with new format 4".format(file_date)
+            df = read_csv(daily_file, compression = compression, header = 0,
+                        engine = 'python')
+            names = [n.strip() for n in DOWNLOADED_COL_NAMES_20170627.split(',')]
+            col_dict = dict(zip(names, COL_NAMES_20170627))
+            df.drop([n for n in df.columns if not n in names], 1, inplace = True)
+            df.rename(columns = col_dict, inplace = True)
+            return df
+        elif cur_day > NEW_FMT_DATE3:
             print "loading date {0} with new format 3".format(file_date)
             return read_csv(daily_file, compression = compression, names = COL_NAMES_20150104, header = 0,
                         engine = 'python')
-        if cur_day > NEW_FMT_DATE2:
+        elif cur_day > NEW_FMT_DATE2:
             print "loading date {0} with new format 2".format(file_date)
             return read_csv(daily_file, compression = compression, names = COL_NAMES_20141218, header = 0,
                         converters = {'Table':parse_pct, 'Depth':parse_pct}, engine = 'python')
-        if cur_day > NEW_FMT_DATE:
+        elif cur_day > NEW_FMT_DATE:
             print "loading date {0} with new format".format(file_date)
             return read_csv(daily_file, compression = compression, names = COL_NAMES_20141205, header = 0,
                         converters = {'Table':parse_pct, 'Depth':parse_pct}, engine = 'python')
@@ -164,14 +193,14 @@ def cache_records(records, active, file_date):
     #s['active'] = active
     #s['attributes'] = pd.Series({'file_date':file_date})
 
-def load_cache():
+def load_cache(cachepath = CACHE_PATH):
     now = datetime.now()
     #h5path = path.join(CACHE_PATH, 'rapnet.h5')
     #if path.exists(h5path):
     #    s = H5Store(h5path)
     #    atts = s['attributes'].to_dict()
     #    return s['records'], s['active'], atts['file_date']
-    pklpath = path.join(CACHE_PATH, 'rapnet.pkl')
+    pklpath = path.join(cachepath, 'rapnet.pkl')
     if path.exists(pklpath):
         s = pd.read_pickle(pklpath).to_dict()
         print 'cache load took {0}'.format(datetime.now() - now)
@@ -186,6 +215,14 @@ def gen_file_dates(start_day):
     while cur_day <= today:
         yield cur_day
         cur_day = cur_day + oneday
+
+def read_latest_file():
+    d = datetime.today()
+    df = read_daily_file(d)
+    while len(df) == 0:
+        d = d - timedelta(days=1)
+        df = read_daily_file(d)
+    return filter_data(df), d.strftime('%Y%m%d')
 
 def get_latest(grp):
     grp.sortlevel(level='event_day', inplace=True, ascending = False)
@@ -203,9 +240,8 @@ def build_cache():
 
     file_date = None
     for cur_day in gen_file_dates(first_day):
-        file_date = cur_day.strftime('%Y%m%d')
         now = datetime.now()
-        df = read_daily_file(file_date, cur_day)
+        df = read_daily_file(cur_day)
         if len(df) == 0:
             continue
         print 'processing file for {0}...'.format(file_date),
