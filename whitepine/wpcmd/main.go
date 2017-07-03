@@ -1,13 +1,13 @@
 package main
 
 import (
+	"blue-meth/whitepine/rapnet"
 	"flag"
 	"fmt"
 	"io"
 	"os"
 	"strings"
 	"text/template"
-	"whitepine/rapnet"
 )
 
 // Taken from the code for the revel command, which borrows from the "go" command.
@@ -34,23 +34,12 @@ and load it into the whitepine db.
 `,
 }
 
-var cmdDownload = &Command{
-	UsageLine: "download",
-	Short:     "Download the latest rapnet data file",
-	Long: `
-Connect to rapnet and download compressed CSV of the latest copy of the database, 
-and load it into the whitepine db.
-`,
-}
-
 func init() {
 	cmdImport.Run = rapnet.ImportLatest
-	cmdDownload.Run = rapnet.DownloadLatest
 }
 
 var commands = []*Command{
 	cmdImport,
-	cmdDownload,
 }
 
 func main() {
