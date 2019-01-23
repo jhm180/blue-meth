@@ -5,7 +5,7 @@ from os import path
 import base64
 import logging
 import sys 
-
+import datetime
 
 def get_rap_file(request):
 	# authenticate with Rap server and get ticket 
@@ -16,13 +16,19 @@ def get_rap_file(request):
 	response = conn.getresponse()
 	auth_ticket = response.read()
 	conn.close()
-	
+
+	y = datetime.date.today().strftime("%Y")
+	m = datetime.date.today().strftime("%m")
+	d = datetime.date.today().strftime("%d")
+	destination_blob_name = y+'-'+m+'-'+d+'-'+'FullRapFile.csv'
+
 	bucket_name = 'rapdvtfiles'
 	source_file_name = '/tmp/download.csv'
-	destination_blob_name = 'upload.csv'
+	# destination_blob_name = 'upload.csv'
 	
 	try:
 		# TO DO - Update Filename to include date, upload 
+		# TO DO - email joe if error
 		
 		# get file from Rap
 		output_file = os.open(source_file_name, os.O_CREAT|os.O_WRONLY)
@@ -32,9 +38,7 @@ def get_rap_file(request):
 		url = "/HTTP/DLS/GetFile.aspx"
 		conn.request("POST", url, params, headers)
 		response = conn.getresponse()
-		logging.warn('response size-' + str(sys.getsizeof(response)))
 		data = response.read()
-		logging.warn('data size-' + str(sys.getsizeof(data)))
 		os.write(output_file, data)
 		conn.close()
 		
@@ -43,10 +47,10 @@ def get_rap_file(request):
 		bucket = storage_client.get_bucket(bucket_name)
 		blob = bucket.blob(destination_blob_name)
 		blob.upload_from_filename(source_file_name)
-		output_file.os.close()
-		return 'success'
+		os.close(output_file)
+		logging.warn('output file size - ' + str(sys.getsizeof(output_file)))
+		return 'success ' + str(destination_blob_name)
+
 	except IOError:
-		output_file = os.open('/tmp/download.csv', os.O_CREAT|os.O_WRONLY)
-		output_file.os.close()
-		return 'fail' 
+		return 'fail ' + str(destination_blob_name)
 

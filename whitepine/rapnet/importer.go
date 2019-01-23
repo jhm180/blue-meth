@@ -34,8 +34,8 @@ func getPath(csvType, date string) (filePath string) {
 	return filePath
 }
 
-func importCSV(csvType, date string) (filePath string, err error) {
-	filePath = getPath(csvType, date)
+func importCSV(date string) (filePath string, err error) {
+	filePath = getPath("Main", date)
 	if exists(filePath) {
 		fmt.Printf("%s already exists!\n", filePath)
 		err = nil
@@ -49,37 +49,36 @@ func importCSV(csvType, date string) (filePath string, err error) {
 	}
 
 	var resp *http.Response = nil
-	if csvType != "Main" {
-		resp, err = http.PostForm(fmt.Sprintf(urlTemplate, csvType), url.Values{"username": {"omellet"}, "password": {"omellet5355"}})
+	resp, err = http.PostForm("https://technet.rapaport.com/HTTP/Authenticate.aspx", url.Values{"username": {"73906"}, "password": {"Certs5355"}})
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
 	} else {
-		resp, err = http.PostForm("https://technet.rapaport.com/HTTP/Authenticate.aspx", url.Values{"username": {"omellet"}, "password": {"omellet5355"}})
+		fmt.Printf("Authenticated...\n")
+		var body []byte = nil
+		body, err = ioutil.ReadAll(resp.Body)
+		resp.Body.Close()
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)
+			return
 		} else {
-			var body []byte = nil
-			body, err = ioutil.ReadAll(resp.Body)
-			resp.Body.Close()
+			csvUrl := "http://technet.rapaport.com/HTTP/DLS/GetFile.aspx"
+			tickBytes := []byte("ticket=")
+			tickBytes = append(tickBytes, body...)
+			var req *http.Request = nil
+			ticketStr := string(body)
+			vals := url.Values{"ticket": {ticketStr}}
+			req, err = http.NewRequest("POST", csvUrl, strings.NewReader(vals.Encode()))
 			if err != nil {
-				fmt.Printf("Error: %v\n", err)
+				fmt.Printf("Error creating NewRequest: %v\n", err)
 				return
-			} else {
-				csvUrl := "http://technet.rapaport.com/HTTP/DLS/GetFile.aspx"
-				tickBytes := []byte("ticket=")
-				tickBytes = append(tickBytes, body...)
-				var req *http.Request = nil
-				ticketStr := string(body)
-				vals := url.Values{"ticket": {ticketStr}}
-				req, err = http.NewRequest("POST", csvUrl, strings.NewReader(vals.Encode()))
-				req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-				req.Header.Set("Accept-Encoding", "gzip, deflate")
-				if err != nil {
-					return
-				}
-				client := new(http.Client)
-				resp, err = client.Do(req)
-				if err != nil {
-					return
-				}
+			}
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			req.Header.Set("Accept-Encoding", "gzip, deflate")
+			client := new(http.Client)
+			resp, err = client.Do(req)
+			if err != nil {
+				fmt.Printf("Error in client.Do: %v\n", err)
+				return
 			}
 		}
 	}
@@ -126,7 +125,7 @@ func ImportLatest(args []string) (err error) {
 	date := now.Format("20060102")
 	for i := 0; i < 3; i++ {
 		fmt.Printf("Attempt %d\n", i+1)
-		fname, err := importCSV("Main", date)
+		fname, err := importCSV(date)
 		if err != nil {
 			return err
 		}
