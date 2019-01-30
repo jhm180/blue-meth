@@ -8,5 +8,5 @@ If you're reading this, the container emailed you."""
 
 
 #shut down instance and email response to white pine dvt
-
+# git merge test 
 utils.send_email(receiver_email, message)
