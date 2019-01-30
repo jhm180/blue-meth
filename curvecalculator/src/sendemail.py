@@ -11,5 +11,4 @@ If you're reading this, the container emailed you."""
 # git merge test 
 # merge test 2
 # merge test 3
-
 utils.send_email(receiver_email, message)

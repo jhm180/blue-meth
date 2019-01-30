@@ -22,7 +22,7 @@ import csv
 
 def filter_csv(request):
 	# set some config values
-	unfiltered_filename = 'upload.csv'
+	unfiltered_filename = '2019-01-30-FullRapFile.csv'
 	unfiltered_bucket_name = 'rapdvtfiles'
 	filtered_filename = 'filtered.csv'
 	filtered_bucket_name = 'filtereddvtfiles'
@@ -112,7 +112,7 @@ def filter_csv(request):
 	#return str(df.info(memory_usage='deep'))
 
 	# filter rows out of df
-	df = df.query('Lab == @gia') 
+	df = df.query('Lab == "GIA" and Color == "H" and Shape == "Round" and Weight > 0.9 and Weight < 1.49 and Clarity == "SI2"') 
 	
 	# create, write to, and upload new csv
 	df.to_csv(source_file_name)
