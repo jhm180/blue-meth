@@ -1,4 +1,5 @@
 import utils as utils
+from datetime import datetime
 
 receiver_email = "whitepinedvt@gmail.com"  # Enter receiver address
 message = """\
@@ -11,4 +12,5 @@ If you're reading this, the container emailed you."""
 # git merge test 
 # merge test 2
 # merge test 3
-utils.send_email(receiver_email, message)
+# utils.send_email(receiver_email, message)
+
