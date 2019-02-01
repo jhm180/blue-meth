@@ -1,5 +1,5 @@
 # Use an official Python runtime as a parent image
-FROM python:2.7-slim
+FROM python:3.7-slim
 
 # Set the working directory to /app
 WORKDIR /app
@@ -17,8 +17,8 @@ COPY src /app
 EXPOSE 8080
 
 # Define environment variable
-ENV NAME World
-# ENV GOOGLE_APPLICATION_CREDENTIALS = "/Users/joemellet/downloads/wpdvt-228113-ddc6feae2593.json"
+# ENV NAME World
+# ENV GOOGLE_APPLICATION_CREDENTIALS = "/Users/joemellet/src/devutils/wpdvt-228113-ddc6feae2593.json"
 
 # Run app.py when the container launches
 CMD ["python", "curvecalc.py"]

@@ -6,216 +6,19 @@
 import pandas as pd
 import numpy as np
 import pandas.io.sql as psql 
-# import matplotlib 	
-# Force matplotlib to not use any Xwindows backend.
-# matplotlib.use('Agg')									#COMMENTED OUT - UNCOMMENT IF NECESSARY
-# import matplotlib.pyplot as plt
-# import pylab as pl 
 from scipy.optimize import curve_fit
-# from matplotlib.backends.backend_pdf import PdfPages
 import math
 import sys
-#sys.path.insert(0, '/home/oliver/src/blue-meth/ipynb')
-# import rapnet_loader as rl
 from datetime import datetime
 import statsmodels.api as sm
 from os import path
 import os
 import openpyxl
+import utils
 
+# TODO - PRINCESS OUTPUT BROKEN
 
-def ratio(measurement):
-    if pd.isnull(measurement):
-        return -999999
-    measurementx = (measurement.replace('-','x'))
-    dims = (measurementx.split('x'))
-    side1 = float(dims[0])
-    side2 = float(dims[1])
-    if side1 == 0 or side2 == 0:
-        return -999999
-    else:
-        return max(side1/side2, side2/side1)
-
-# cdef = cython function definition
-# double - double-precision floating-point number (http://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html)
-# double rap_price_key(double wt) - function that takes a double wt and returns a double
-def rap_price_key(wt):
-    if wt >= 0.01 and wt <= 0.03:
-        return 0.01
-    elif wt >= 0.04 and wt <= 0.07:
-        return 0.07
-    elif wt >= 0.08 and wt <= 0.14:
-        return 0.08
-    elif wt >= 0.15 and wt <= 0.17:
-        return 0.15
-    elif wt >= 0.18 and wt <= 0.22:
-        return 0.18
-    elif wt >= 0.23 and wt <= 0.29:
-        return 0.23
-    elif wt >= 0.30 and wt <= 0.39:
-        return 0.30
-    elif wt >= 0.40 and wt <= 0.49:
-        return 0.40
-    elif wt >= 0.50 and wt <= 0.69:
-        return 0.50
-    elif 0.70 <= wt and wt <= 0.89:
-        return 0.70
-    elif 0.90 <= wt and wt <= 0.99:
-        return 0.90
-    elif 1.00 <= wt and wt <= 1.49:
-        return 1.00
-    elif 1.50 <= wt and wt <= 1.99:
-        return 1.50
-    elif 2.00 <= wt and wt <= 2.99:
-        return 2.00
-    elif 3.00 <= wt and wt <= 3.99:
-        return 3.00
-    elif 4.00 <= wt and wt <= 4.99:
-        return 4.00
-    elif 5.00 <= wt and wt <= 9.99:
-        return 5.00
-    elif 10.00 <= wt:
-        return 10.00
-    else:
-        return -999999.0
-
-def shape_disc_key(wt):
-    if wt >= 0.01 and wt <= 0.03:
-        return 0.01
-    elif wt >= 0.04 and wt <= 0.07:
-        return 0.04
-    elif wt >= 0.08 and wt <= 0.14:
-        return 0.08
-    elif wt >= 0.15 and wt <= 0.17:
-        return 0.15
-    elif wt >= 0.18 and wt <= 0.22:
-        return 0.18
-    elif wt >= 0.23 and wt <= 0.29:
-        return 0.23
-    elif wt >= 0.30 and wt <= 0.39:
-        return 0.30
-    elif wt >= 0.40 and wt <= 0.49:
-        return 0.40
-    elif wt >= 0.50 and wt <= 0.59:
-        return 0.50
-    elif wt >= 0.60 and wt <= 0.69:
-        return 0.60
-    elif 0.70 <= wt and wt <= 0.79:
-        return 0.70
-    elif 0.80 <= wt and wt <= 0.89:
-        return 0.80
-    elif 0.90 <= wt and wt <= 0.99:
-        return 0.90
-    elif 1.00 <= wt and wt <= 1.24:
-        return 1.00
-    elif 1.25 <= wt and wt <= 1.49:
-        return 1.25
-    elif 1.50 <= wt and wt <= 1.74:
-        return 1.50
-    elif 1.75 <= wt and wt <= 1.99:
-        return 1.75
-    elif 2.00 <= wt and wt <= 2.49:
-        return 2.00
-    elif 2.50 <= wt and wt <= 2.99:
-        return 2.50
-    elif 3.00 <= wt and wt <= 3.99:
-        return 3.00
-    elif 4.00 <= wt and wt <= 4.99:
-        return 4.00
-    elif 5.00 <= wt and wt <= 9.99:
-        return 5.00
-    elif 10.00 <= wt:
-        return 10.00
-    else:
-        return -999999.0
-
-def rap_shape_key(shape):
-    if shape == 'Round':
-        return 'BR'
-    else:
-        return 'PS'
-
-def discount_shape_key(shape):
-    if shape == 'Round':
-        return 'RB'
-    elif shape == 'Princess':
-        return 'PR'
-    else:
-        return 'NA'
-
-def depth_diff(depth):
-    if depth >= 72.0:
-        return depth - 72.0
-    elif depth < 64:
-        return 64 - depth
-    else:
-        return 0
-
-def ratio_diff(ratio):
-	# comment
-    return math.fabs(ratio - 1)
-
-def grade_rank(grade):
-    if pd.isnull(grade):
-        return -999999
-    if grade == 'Excellent':
-        return 0
-    elif grade == 'Very Good':
-        return 1
-    elif grade == 'Good':
-        return 2
-    elif grade == 'Fair':
-        return 3
-    elif grade == 'Poor':
-        return 4
-    else:
-        return -999999    
-    
-def price_curve_key(wt):
-    if wt >= 0.01 and wt <= 0.03:
-        return 'r01'
-    elif wt >= 0.04 and wt <= 0.07:
-        return 'r04'
-    elif wt >= 0.08 and wt <= 0.14:
-        return 'r08'
-    elif wt >= 0.15 and wt <= 0.17:
-        return 'r15'
-    elif wt >= 0.18 and wt <= 0.22:
-        return 'r18'
-    elif wt >= 0.23 and wt <= 0.29:
-        return 'r23'
-    elif wt >= 0.30 and wt <= 0.39:
-        return 'r30'
-    elif wt >= 0.40 and wt <= 0.49:
-        return 'r40'
-    elif wt >= 0.50 and wt <= 0.59:
-        return 'r50'
-    elif 0.60 <= wt and wt <= 0.69:
-        return 'r60'
-    elif 0.70 <= wt and wt <= 0.79:
-        return 'r70'
-    elif 0.80 <= wt and wt <= 0.89:
-        return 'r80'
-    elif 0.90 <= wt and wt <= 0.99:
-        return 'r90'
-    elif 1.00 <= wt and wt <= 1.49:
-        return 'rc1'
-    elif 1.50 <= wt and wt <= 1.99:
-        return 'rcr'
-    elif 2.00 <= wt and wt <= 2.99:
-        return 'rc2'
-    elif 3.00 <= wt and wt <= 3.99:
-        return 'rc3'
-    elif 4.00 <= wt and wt <= 4.99:
-        return 'rc4'
-    elif 5.00 <= wt and wt <= 9.99:
-        return 'rc5'
-    elif 10.00 <= wt:
-        return 'rct'
-    else:
-        return -999999.0
-
-wp_path = '/local/'
+wp_path = '/tmp/'
 all_countries = ['usa', 'canada', 'united kingdom', 'hong kong', 'india', 'belgium', 'israel', 'sri lanka', 'germany', \
             'thailand', 'uae', 'china', 'south africa', 'new zealand', 'australia', 'france', 'singapore', 'italy', 'uzbekistan', 'uganda']
 usa_only = ['usa']
@@ -242,18 +45,6 @@ csv_data_types = { 'Diamond ID': 'int64', 'Depth Percent': 'float64', 'Supplier 
 csv_columns = ['Diamond ID', 'Depth Percent', 'Supplier country', 'Table Percent', 'Date Updated', 'State', 'City', 'Culet Size', 'Culet', 'Girdle', 'Table', 'Depth', 'Price Percentage', 'Price Per Carat','Stock Number', 'Certificate Number', 'Lab', 'Meas Depth', 'Meas Width', 'Meas Length', 'Measurements', 'Fluorescence Intensity', 'Fluorescence Color', 'Symmetry', 'Polish', 'Cut', 'Clarity', 'Color', 'Weight', 'Shape','Name Code','RapNet Account ID', 'Seller Name']
 
 # grade all princess cuts
-def set_grade(df, df_p, mindepth, maxdepth, maxratio, sym, polish, grade):
-    df_i = df_p[(df_p['Depth Percent'] >= mindepth) 
-               & (df_p['Depth Percent'] <= maxdepth) 
-               & (df_p.Ratio <= maxratio) 
-               & (df_p.Symmetry.isin(sym)) 
-               & (df_p.Polish.isin(polish)) 
-               ]
-    df.loc[df_i.index, 'Cut Grade'] = grade
-
-###################
-##### FITS POLYNOMIALS TO TOTAL PRICE DATA (X = CARAT WEIGHT, Y = TOTAL PRICE) AND EXPORTS THE FIT PARAMETERS TO EXCEL
-###################
 
 def price_curve_generator_all(df, wp_path, file_date):
     output = {\
@@ -297,7 +88,7 @@ def price_curve_generator_all(df, wp_path, file_date):
 
 
     shapes = [ \
-                #['Princess', ['Excellent'],  ['Excellent', 'Very Good', 'Good'],  ['Excellent', 'Very Good', 'Good'], 'PS', usa_only, 'PR'], \
+                ['Princess', ['Excellent'],  ['Excellent', 'Very Good', 'Good'],  ['Excellent', 'Very Good', 'Good'], 'PS', usa_only, 'PR'], \
                 ['Round', ['Excellent'],  ['Excellent'],  ['Excellent'], 'BR', all_countries, 'RB'] \
                 ]
 
@@ -318,8 +109,7 @@ def price_curve_generator_all(df, wp_path, file_date):
         	& (df_caratfilt.Polish.isin(polish)) \
         	& (df_caratfilt.Symmetry.isin(sym)) \
         	& (df_caratfilt['Fluorescence Intensity'].isin(fluor_none))]
-                              
-        print "num rows returned - " + str(len(df_iter.index))
+
         carat_bins = [ \
                   (0.00, 0.04, 0.01, 0.03, 0.01, 1, 'r01', r01),\
                   (0.04, 0.08, 0.04, 0.07, 0.04, 1, 'r04', r04),\
@@ -342,9 +132,7 @@ def price_curve_generator_all(df, wp_path, file_date):
                   (5.00, 10.00, 5.00, 9.99, 5.00, 2, 'rc5', rc5),\
                   (10.00, 30.00, 10.00, 29.99, 10.00, 2, 'rct', rct)\
                   ]
-        line_colors = ['r', 'g', 'b', 'c', 'm', 'y', 
-                'k', 'r', 'g', 'b', 'c', 'm', 'y', 'k', 
-                'r', 'g', 'b', 'c', 'm', 'y']
+
         for i in range(len(carat_bins)):
             fxn_min = carat_bins[i][0]
             fxn_max = carat_bins[i][1]
@@ -537,14 +325,14 @@ def create_shape_discs(df):
     return output_df
 
 def write_excel(df, wp_path, file_date, df_rap_price_list):
-    file_name = path.join(wp_path, 'prdt_optimized_{0}-{1}.xlsx'.format(file_date, datetime.now().strftime("%H%M")))
+    file_name = path.join(wp_path, 'prdt_optimized_{0}.xlsx'.format(datetime.now().strftime("%Y-%m-%d-%H%M")))
     df_price_curves = price_curve_generator_all(df, wp_path, file_date)
     writer = pd.ExcelWriter(file_name)
     df_price_curves.to_excel(writer, 'PRICE PARAMS')
 
     create_shape_discs(df).to_excel(writer, 'SHAPE DISCS')
 
-    df['PriceCurveKey'] = df['Weight'].apply(price_curve_key)
+    df['PriceCurveKey'] = df['Weight'].apply(utils.price_curve_key)
     df_index_cols = ['DiscountShapeKey','Color','Clarity','PriceCurveKey']
     px_curve_index_cols = ['Shape','Color','Clarity','CurveKey']
     px_curve_cols = ['PolyDegree','Px2','Px1','Px0','StdDev']
@@ -577,8 +365,6 @@ def write_excel(df, wp_path, file_date, df_rap_price_list):
                         [['E', 'F'], ['IF', 'VVS1', 'VVS2']], \
                         [['G', 'H', 'I', 'J'], ['IF', 'VVS1', 'VVS2']], \
                         [['D'], ['VS1', 'VS2', 'SI1', 'SI2']], \
-                        #[['E', 'F', 'G', 'H', 'I', 'J'], ['VS1', 'VS2']], \
-                        #[['E', 'F', 'G', 'H', 'I', 'J'], ['SI1', 'SI2']], \
                         [['E', 'F'], ['VS1', 'VS2']], \
                         [['G', 'H', 'I', 'J'], ['VS1', 'VS2']], \
                         [['E', 'F'], ['SI1', 'SI2']], \
@@ -633,9 +419,8 @@ def write_excel(df, wp_path, file_date, df_rap_price_list):
                              'PR DepthDiff Coefficient' : [], 'PR Sym Rank Coefficient' : [], \
                              'PR DepthDiff T-Stat' : [], 'PR Sym Rank T-Stat' : []}
 
-    # exclude invalid prices
-    # df_valid_px = df[df.Px2 != -999999]
-
+    # TODO - FIX .ix PYTHON 3 DEPRCATION ISSUE
+    # TODO - ADD FILE DATE COLUMN
     for p in range(len(discount_bins)):
         min_carat = discount_bins[p][0]
         max_carat = discount_bins[p][1]
@@ -805,18 +590,20 @@ def write_excel(df, wp_path, file_date, df_rap_price_list):
     temp.to_excel(writer, 'RAP PRICE LIST')
     pd.DataFrame({'Date': [file_date]}).to_excel(writer, 'sheet1')
     writer.save()
+    utils.upload_to_gcloud("curvecalcoutput", file_name, file_name.split("_")[-1])
 
 def load_data(file_date):
-    #all_df, current_df, file_date = rl.load_cache()
     d = datetime.strptime(file_date, "%Y%m%d")
 
-    # TODO - Replace current_df readdailyfile with readcsv 
-    # current_df = rl.read_daily_file(d)
-    current_df = pd.read_csv('/local/rap-test-data.csv', dtype=csv_data_types, usecols=csv_columns)
+    # TODO - AUTOMATICALLY GET LATSEST FILE - COMPARE TO TODAY'S DATE or PASS IN FILENAME FROM TRIGGERING FXN
+    file = utils.get_gcloud_file("rapdvtfiles", "2019-01-31-FullRapFile.csv") 
+    current_df = pd.read_csv(file, dtype=csv_data_types, usecols=csv_columns)
 
-    csv_path = path.join(wp_path, 'Rapnet Price List {0}.csv'.format(file_date))
-    if not path.isfile(csv_path):
-        csv_path = path.join(wp_path, 'Rap-Price-List.csv')
+    # TODO - AUTOMATICALLY GET LATEST FILE
+    csv_path = utils.get_gcloud_file("rappricelists", "2019-01-28-RapPriceList.csv")
+
+    #if not path.isfile(csv_path):
+    #    csv_path = path.join(wp_path, 'Rap-Price-List.csv')
 
     #import rappaport price list
     df_rap_price_list =  pd.read_csv(csv_path, sep=',', header=0,\
@@ -825,25 +612,25 @@ def load_data(file_date):
     df = current_df.query('Lab == "GIA"') #TODO - Filter bad cert values
 
     df['TotalPrice'] = df['Price Per Carat'] * df['Weight'] #l.Price represents price per carat
-    df['RapPriceKey'] = df['Weight'].apply(rap_price_key)
-    df['RapShapeKey'] = df['Shape'].apply(rap_shape_key)
-    df['ShapeDiscKey'] = df['Weight'].apply(shape_disc_key)
-    df['DiscountShapeKey'] = df['Shape'].apply(discount_shape_key)
+    df['RapPriceKey'] = df['Weight'].apply(utils.rap_price_key)
+    df['RapShapeKey'] = df['Shape'].apply(utils.rap_shape_key)
+    df['ShapeDiscKey'] = df['Weight'].apply(utils.shape_disc_key)
+    df['DiscountShapeKey'] = df['Shape'].apply(utils.discount_shape_key)
     df = pd.merge(df, df_rap_price_list, how = 'left', left_on = ['RapShapeKey','Color','Clarity','RapPriceKey'],
                    right_on = ['Shape','Color','Clarity','MinCarat'], suffixes = ['','_pl'])
     df.rename(columns={'PricePerCar':'RapPricePerCarat'}, inplace=True)
     df.loc[df[df.RapPricePerCarat.isnull()].index, 'RapPricePerCarat'] = -999999
     df['ExactPctRap'] = (df['Price Per Carat'] - df['RapPricePerCarat']) / df['RapPricePerCarat']
-    df['Ratio'] = df['Measurements'].apply(ratio)
-    df['DepthDiff'] = df['Depth Percent'].apply(depth_diff)
-    df['RatioDiff'] = df['Ratio'].apply(ratio_diff)
-    df['SymRank'] = df['Symmetry'].apply(grade_rank)
+    df['Ratio'] = df['Measurements'].apply(utils.ratio)
+    df['DepthDiff'] = df['Depth Percent'].apply(utils.depth_diff)
+    df['RatioDiff'] = df['Ratio'].apply(utils.ratio_diff)
+    df['SymRank'] = df['Symmetry'].apply(utils.grade_rank)
 
     df_p = df.query('Shape == "Princess"')
 
-    set_grade(df, df_p, 56.0, 82.0, 1.25, ['Excellent','Very Good','Good'], ['Excellent','Very Good','Good','Fair'], 'Good')
-    set_grade(df, df_p, 62.0, 75.0, 1.10, ['Excellent','Very Good', 'Good','Fair'], ['Excellent','Very Good','Good','Fair'], 'Very Good')
-    set_grade(df, df_p, 64.0, 72.0, 1.05, ['Excellent','Very Good', 'Good'], ['Excellent','Very Good','Good'], 'Excellent')
+    utils.grade_princess_cuts(df, df_p, 56.0, 82.0, 1.25, ['Excellent','Very Good','Good'], ['Excellent','Very Good','Good','Fair'], 'Good')
+    utils.grade_princess_cuts(df, df_p, 62.0, 75.0, 1.10, ['Excellent','Very Good', 'Good','Fair'], ['Excellent','Very Good','Good','Fair'], 'Very Good')
+    utils.grade_princess_cuts(df, df_p, 64.0, 72.0, 1.05, ['Excellent','Very Good', 'Good'], ['Excellent','Very Good','Good'], 'Excellent')
 
     return (df, df_rap_price_list)
 
@@ -851,6 +638,8 @@ def run(file_date):
     df, df_rap_price_list = load_data(file_date)
 
     write_excel(df, wp_path, file_date, df_rap_price_list)
+
+start_time = datetime.now()
 
 if __name__ == '__main__':
     import argparse
@@ -861,3 +650,18 @@ if __name__ == '__main__':
     if args.date:
         file_date = args.date
     run(file_date)
+
+end_time=datetime.now()
+duration = end_time - start_time
+
+message =  """\
+Subject: Curvecalc.py Successful
+
+Start Time = {0} \n
+End Time = {1} \n
+Run Duration = {2} \n
+\n
+HUZZAH!!""".format(start_time, end_time, duration)
+
+utils.send_email("joe.mellet@gmail.com", message)
+utils.stop_server()
