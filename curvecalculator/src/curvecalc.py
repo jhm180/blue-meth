@@ -16,7 +16,9 @@ import os
 import openpyxl
 import utils
 
-# TODO - PRINCESS OUTPUT BROKEN
+# TOCHECK - PRINCESS OUTPUT BROKEN - DONE... VERIFY
+# TOCHECK - COMPLARE ILOC / IX OUTPUT AFTER FIX   
+
 
 wp_path = '/tmp/'
 all_countries = ['usa', 'canada', 'united kingdom', 'hong kong', 'india', 'belgium', 'israel', 'sri lanka', 'germany', \
@@ -104,7 +106,7 @@ def price_curve_generator_all(df, wp_path, file_date):
         shape_key = shapes[z][6]
 
         # hoist common comparisons out of the loops so we only do them once per shape
-        df_iter = df_caratfilt[(df_caratfilt['Supplier country'].str.lower().isin(all_countries)) \
+        df_iter = df_caratfilt[(df_caratfilt['Supplier country'].str.lower().isin(location)) \
         	& (df_caratfilt['Cut'].isin(cutgrade)) \
         	& (df_caratfilt.Polish.isin(polish)) \
         	& (df_caratfilt.Symmetry.isin(sym)) \
@@ -267,12 +269,6 @@ def price_curve_generator_all(df, wp_path, file_date):
                             output['ResidSlope'].append(-999999)
                             output['ResidCept'].append(-999999)
 
-                        #load rap price for color/clarity/weight combination
-                        #rap_price = df_rap_price_list['PricePerCar'].ix[rap_shape_key].ix[color].ix[clar].ix[rap_price_key]
-
-                        ###plot best fit curves, best fit curve less the stdev calc, & scatter of price v weight
-
-                #set plot limits - exception handling for empty dataframes
 
     #create a dataframe that contains the curve fit parameters
     shape = output['Shape']
@@ -315,9 +311,7 @@ def price_curve_generator_all(df, wp_path, file_date):
     return df_output
 
 def create_shape_discs(df):
-    output_df = df[df['Fluorescence Intensity'].isin(fluor_none_and_faint)].groupby(['Shape', 'Color', 'Clarity', 'ShapeDiscKey']).agg({"Polish":len, "Price Percentage":np.mean})
-    #df_flatkey.reindex(df_flatkey.index.map(idx: "_".join(idx)), columns = ["Len"])
-    #idx = df_flatkey.df_flatkey.reset_index().reindex()
+    output_df = df[df['Fluorescence Intensity'].isin(fluor_none_and_faint)].groupby(['Shape', 'Color', 'Clarity', 'ShapeDiscKey']).agg({"Price Percentage":np.mean, "Polish":len}) 
     idx = output_df.index.map(lambda idx: "{}_{}_{}_{}".format(idx[1],idx[2],idx[3],idx[0]))
     output_df = output_df.reset_index()
     output_df.index = idx
@@ -419,7 +413,6 @@ def write_excel(df, wp_path, file_date, df_rap_price_list):
                              'PR DepthDiff Coefficient' : [], 'PR Sym Rank Coefficient' : [], \
                              'PR DepthDiff T-Stat' : [], 'PR Sym Rank T-Stat' : []}
 
-    # TODO - FIX .ix PYTHON 3 DEPRCATION ISSUE
     # TODO - ADD FILE DATE COLUMN
     for p in range(len(discount_bins)):
         min_carat = discount_bins[p][0]
@@ -458,16 +451,15 @@ def write_excel(df, wp_path, file_date, df_rap_price_list):
                 avg_discount = np.mean(df_temp['ExactPctRap'] - df_temp['PredictedPctRap'])
                 med_discount = np.median(df_temp['ExactPctRap'] - df_temp['PredictedPctRap'])
                 std_discount = np.std(df_temp['ExactPctRap'] - df_temp['PredictedPctRap'])
-                num_stones = len(df_temp)
 
                 if shape == 'Round':
                     if len(df_temp) == 0:
                         for j in discount_groups[m][0]:
                             for k in discount_groups[m][1]:
-                                df_number_of_stones.ix[j,k] = 0
-                                df_avg_discount.ix[j,k] = -999999
-                                df_med_discount.ix[j,k] = -999999
-                                df_std_discount.ix[j,k] = -999999
+                                df_number_of_stones.loc[j,k] = 0
+                                df_avg_discount.loc[j,k] = -999999
+                                df_med_discount.loc[j,k] = -999999
+                                df_std_discount.loc[j,k] = -999999
                                 discount_output['Tag'].append("%s_%sct_%sct_%s_%s_%s" %(shape_tag,min_carat,max_carat,j,k,tag))
                                 discount_output['RB Avg Discount'].append(-999999)
                                 discount_output['RB Median Discount'].append(-999999)
@@ -483,10 +475,10 @@ def write_excel(df, wp_path, file_date, df_rap_price_list):
                     elif len(df_temp) <= 7:
                         for j in discount_groups[m][0]:
                             for k in discount_groups[m][1]:
-                                df_number_of_stones.ix[j,k] = len(df_temp)
-                                df_avg_discount.ix[j,k] = -999999
-                                df_med_discount.ix[j,k] = -999999
-                                df_std_discount.ix[j,k] = -999999
+                                df_number_of_stones.loc[j,k] = len(df_temp)
+                                df_avg_discount.loc[j,k] = -999999
+                                df_med_discount.loc[j,k] = -999999
+                                df_std_discount.loc[j,k] = -999999
                                 discount_output['Tag'].append("%s_%sct_%sct_%s_%s_%s" %(shape_tag,min_carat,max_carat,j,k,tag))
                                 discount_output['RB Avg Discount'].append(-999999)
                                 discount_output['RB Median Discount'].append(-999999)
@@ -502,10 +494,10 @@ def write_excel(df, wp_path, file_date, df_rap_price_list):
                     else:
                         for j in discount_groups[m][0]:
                             for k in discount_groups[m][1]:
-                                df_number_of_stones.ix[j,k] = num_stones
-                                df_avg_discount.ix[j,k] = avg_discount
-                                df_med_discount.ix[j,k] = med_discount
-                                df_std_discount.ix[j,k] = std_discount
+                                df_number_of_stones.loc[j,k] = len(df_temp)
+                                df_avg_discount.loc[j,k] = avg_discount
+                                df_med_discount.loc[j,k] = med_discount
+                                df_std_discount.loc[j,k] = std_discount
                                 discount_output['Tag'].append("%s_%sct_%sct_%s_%s_%s" %(shape_tag,min_carat,max_carat,j,k,tag))
                                 discount_output['RB Avg Discount'].append(avg_discount)
                                 discount_output['RB Median Discount'].append(med_discount)
@@ -522,7 +514,7 @@ def write_excel(df, wp_path, file_date, df_rap_price_list):
                     if len(df_temp) == 0:
                         for j in discount_groups[m][0]:
                             for k in discount_groups[m][1]:
-                                df_number_of_stones.ix[j,k] = 0
+                                df_number_of_stones.loc[j,k] = 0
                                 discount_output['Tag'].append("%s_%sct_%sct_%s_%s_%s" %(shape_tag,min_carat,max_carat,j,k,tag))
                                 discount_output['RB Avg Discount'].append(-999999)
                                 discount_output['RB Median Discount'].append(-999999)
@@ -538,7 +530,7 @@ def write_excel(df, wp_path, file_date, df_rap_price_list):
                     elif len(df_temp) <= 12:
                         for j in discount_groups[m][0]:
                             for k in discount_groups[m][1]:
-                                df_number_of_stones.ix[j,k] = len(df_temp)
+                                df_number_of_stones.loc[j,k] = len(df_temp)
                                 discount_output['Tag'].append("%s_%sct_%sct_%s_%s_%s" %(shape_tag,min_carat,max_carat,j,k,tag))
                                 discount_output['RB Avg Discount'].append(-999999)
                                 discount_output['RB Median Discount'].append(-999999)
@@ -554,6 +546,7 @@ def write_excel(df, wp_path, file_date, df_rap_price_list):
                     else:
                         df_regress_temp = df_temp[(df_temp['PredictedPercentDiff'] <= 0.1) & (df_temp['Weight'] >= .4)]
                         df_princess_regression = pd.DataFrame([df_regress_temp['PredictedPercentDiff'],df_regress_temp['DepthDiff'],df_regress_temp['SymRank']]).transpose()
+                        print(len(df_princess_regression.SymRank))
 
                         y = df_princess_regression['PredictedPercentDiff']
                         X = sm.add_constant(df_princess_regression.drop(['PredictedPercentDiff'], axis = 1))
@@ -562,7 +555,7 @@ def write_excel(df, wp_path, file_date, df_rap_price_list):
 
                         for j in discount_groups[m][0]:
                             for k in discount_groups[m][1]:
-                                df_number_of_stones.ix[j,k] = len(df_temp)
+                                df_number_of_stones.loc[j,k] = len(df_temp)
                                 discount_output['Tag'].append("%s_%sct_%sct_%s_%s_%s" %(shape_tag,min_carat,max_carat,j,k,tag))
                                 discount_output['RB Avg Discount'].append(-999999)
                                 discount_output['RB Median Discount'].append(-999999)
@@ -596,20 +589,19 @@ def load_data(file_date):
     d = datetime.strptime(file_date, "%Y%m%d")
 
     # TODO - AUTOMATICALLY GET LATSEST FILE - COMPARE TO TODAY'S DATE or PASS IN FILENAME FROM TRIGGERING FXN
-    file = utils.get_gcloud_file("rapdvtfiles", "2019-01-31-FullRapFile.csv") 
+    file = utils.get_gcloud_file("rapdvtfiles", "2019-02-08-FullRapFile.csv") 
+    # file = '/local/rap-test-data.csv'
     current_df = pd.read_csv(file, dtype=csv_data_types, usecols=csv_columns)
 
     # TODO - AUTOMATICALLY GET LATEST FILE
     csv_path = utils.get_gcloud_file("rappricelists", "2019-01-28-RapPriceList.csv")
 
-    #if not path.isfile(csv_path):
-    #    csv_path = path.join(wp_path, 'Rap-Price-List.csv')
-
     #import rappaport price list
     df_rap_price_list =  pd.read_csv(csv_path, sep=',', header=0,\
-        names = ['Shape','Clarity','Color','MinCarat','MaxCarat','PricePerCar','Date']) #TODO - upate path to storage bucket    
+        names = ['Shape','Clarity','Color','MinCarat','MaxCarat','PricePerCar','Date'])     
 
-    df = current_df.query('Lab == "GIA"') #TODO - Filter bad cert values
+    # filter out bad rows here - update in future if necessary
+    df = current_df[(current_df.Lab == "GIA") & (current_df['Price Per Carat'] > 0)] 
 
     df['TotalPrice'] = df['Price Per Carat'] * df['Weight'] #l.Price represents price per carat
     df['RapPriceKey'] = df['Weight'].apply(utils.rap_price_key)
@@ -625,6 +617,7 @@ def load_data(file_date):
     df['DepthDiff'] = df['Depth Percent'].apply(utils.depth_diff)
     df['RatioDiff'] = df['Ratio'].apply(utils.ratio_diff)
     df['SymRank'] = df['Symmetry'].apply(utils.grade_rank)
+    df.to_csv('/local/df-tmp.csv')
 
     df_p = df.query('Shape == "Princess"')
 
@@ -664,4 +657,4 @@ Run Duration = {2} \n
 HUZZAH!!""".format(start_time, end_time, duration)
 
 utils.send_email("joe.mellet@gmail.com", message)
-utils.stop_server()
+#utils.stop_server()

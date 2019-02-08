@@ -60,7 +60,7 @@ def grade_princess_cuts(df, df_p, mindepth, maxdepth, maxratio, sym, polish, gra
                & (df_p.Symmetry.isin(sym)) 
                & (df_p.Polish.isin(polish)) 
                ]
-    df.loc[df_i.index, 'Cut Grade'] = grade
+    df.loc[df_i.index, 'Cut'] = grade
 
 def rap_price_key(wt):
     if wt >= 0.01 and wt <= 0.03:
