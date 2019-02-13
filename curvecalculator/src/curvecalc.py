@@ -198,7 +198,6 @@ def price_curve_generator_all(df, wp_path, file_date):
                         #Calculate a residual value - the % difference between predicted price and list price
                         s_residual = (df_plot_range['TotalPrice']-np.polyval(fit_params, df_plot_range['Weight']))/df_plot_range['TotalPrice']
                         df.loc[df_plot_range.index, 'Residual'] = s_residual
-
                         resid_slope = np.poly1d(np.polyfit(df_plot_range['Weight'],s_residual, 1, full=False))
 
                         #Store fit parameters in a dictionary
@@ -315,7 +314,7 @@ def write_excel(df, wp_path, file_date, df_rap_price_list):
              suffixes = ['','_c']
             )
 
-    df['PredictedPrice'] = df['Weight']**2 * df['Px2'] +  df['Weight'] * df['Px1'] + df['Px0']
+    df['PredictedPrice'] = df['Weight']**2 * df['Px2'] + df['Weight'] * df['Px1'] + df['Px0']
     df['PredictedPricePerCarat'] = df['PredictedPrice'] / df['Weight']
     df['PredictedPctRap'] = (df['PredictedPricePerCarat'] - df['RapPricePerCarat']) / df['RapPricePerCarat']
     df['PredictedPercentDiff'] = (df['TotalPrice']-df['PredictedPrice'])/df['PredictedPrice']
@@ -523,29 +522,46 @@ def write_excel(df, wp_path, file_date, df_rap_price_list):
                                 discount_output['PR Sym Rank T-Stat'].append(-999999)
 
                     else:
-                        df_regress_temp = df_temp[(df_temp['PredictedPercentDiff'] <= 0.1) & (df_temp['Weight'] >= .4)]
-                        df_princess_regression = pd.DataFrame([df_regress_temp['PredictedPercentDiff'],df_regress_temp['DepthDiff'],df_regress_temp['SymRank']]).transpose()
-                        print(len(df_princess_regression.SymRank))
+                        try: 
+                            df_regress_temp = df_temp[(df_temp['PredictedPercentDiff'] <= 0.1) & (df_temp['Weight'] >= .4)]
+                            df_princess_regression = pd.DataFrame([df_regress_temp['PredictedPercentDiff'],df_regress_temp['DepthDiff'],df_regress_temp['SymRank']]).transpose()
 
-                        y = df_princess_regression['PredictedPercentDiff']
-                        X = sm.add_constant(df_princess_regression.drop(['PredictedPercentDiff'], axis = 1))
-                        model = sm.OLS(y, X)
-                        reg_results = model.fit()
+                            y = df_princess_regression['PredictedPercentDiff']
+                            X = sm.add_constant(df_princess_regression.drop(['PredictedPercentDiff'], axis = 1))
+                            model = sm.OLS(y, X)
+                            reg_results = model.fit()
 
-                        for j in discount_groups[m][0]:
-                            for k in discount_groups[m][1]:
-                                df_number_of_stones.loc[j,k] = len(df_temp)
-                                discount_output['Tag'].append("%s_%sct_%sct_%s_%s_%s" %(shape_tag,min_carat,max_carat,j,k,tag))
-                                discount_output['RB Avg Discount'].append(-999999)
-                                discount_output['RB Median Discount'].append(-999999)
-                                discount_output['RB Discount Stdev'].append(-999999)
-                                #discount_output['PR Intercept Coefficient'].append(reg_results.beta['intercept'])
-                                discount_output['PR DepthDiff Coefficient'].append(reg_results.params[0]) # 'params' are betas for OLS
-                                discount_output['PR Sym Rank Coefficient'].append(reg_results.params[1])
-                                discount_output['Num Stones'].append(len(df_temp))
-                                #discount_output['PR Intercept T-Stat'].append(reg_results.t_stat['intercept'])
-                                discount_output['PR DepthDiff T-Stat'].append(reg_results.tvalues[0])
-                                discount_output['PR Sym Rank T-Stat'].append(reg_results.tvalues[1])
+                            for j in discount_groups[m][0]:
+                                for k in discount_groups[m][1]:
+                                    df_number_of_stones.loc[j,k] = len(df_temp)
+                                    discount_output['Tag'].append("%s_%sct_%sct_%s_%s_%s" %(shape_tag,min_carat,max_carat,j,k,tag))
+                                    discount_output['RB Avg Discount'].append(-999999)
+                                    discount_output['RB Median Discount'].append(-999999)
+                                    discount_output['RB Discount Stdev'].append(-999999)
+                                    #discount_output['PR Intercept Coefficient'].append(reg_results.beta['intercept'])
+                                    discount_output['PR DepthDiff Coefficient'].append(reg_results.params[0]) # 'params' are betas for OLS
+                                    discount_output['PR Sym Rank Coefficient'].append(reg_results.params[1])
+                                    discount_output['Num Stones'].append(len(df_temp))
+                                    #discount_output['PR Intercept T-Stat'].append(reg_results.t_stat['intercept'])
+                                    discount_output['PR DepthDiff T-Stat'].append(reg_results.tvalues[0])
+                                    discount_output['PR Sym Rank T-Stat'].append(reg_results.tvalues[1])
+                        except:
+                            for j in discount_groups[m][0]:
+                                for k in discount_groups[m][1]:
+                                    df_number_of_stones.loc[j,k] = len(df_temp)
+                                    discount_output['Tag'].append("%s_%sct_%sct_%s_%s_%s" %(shape_tag,min_carat,max_carat,j,k,tag))
+                                    discount_output['RB Avg Discount'].append(-999999)
+                                    discount_output['RB Median Discount'].append(-999999)
+                                    discount_output['RB Discount Stdev'].append(-999999)
+                                    #discount_output['PR Intercept Coefficient'].append(reg_results.beta['intercept'])
+                                    discount_output['PR DepthDiff Coefficient'].append(-999999) # 'params' are betas for OLS
+                                    discount_output['PR Sym Rank Coefficient'].append(-999999)
+                                    discount_output['Num Stones'].append(len(df_temp))
+                                    #discount_output['PR Intercept T-Stat'].append(reg_results.t_stat['intercept'])
+                                    discount_output['PR DepthDiff T-Stat'].append(-999999)
+                                    discount_output['PR Sym Rank T-Stat'].append(-999999)
+
+
     arrays = [discount_output['Tag']]
     tuples = zip(*arrays)
     index = pd.MultiIndex.from_tuples(tuples)
@@ -568,44 +584,37 @@ def load_data(file_date):
     d = datetime.strptime(file_date, "%Y%m%d")
 
     # TODO - AUTOMATICALLY GET LATSEST FILE - COMPARE TO TODAY'S DATE or PASS IN FILENAME FROM TRIGGERING FXN
-    # file = utils.get_gcloud_file("rapdvtfiles", "rap-test-data.csv") 
-    file = '/local/rap-test-data.csv'
-    current_df = pd.read_csv(file, dtype=csv_data_types, usecols=csv_columns)
+    rap_data_file = '/local/2019-01-31-FullRapFile.csv'
+    #rap_data_file = utils.get_gcloud_file("rapdvtfiles", "2019-01-23-FullRapFile.csv") 
+    
+    current_df = pd.read_csv(rap_data_file, dtype=csv_data_types, usecols=csv_columns)
 
     # TODO - AUTOMATICALLY GET LATEST FILE
-    csv_path = utils.get_gcloud_file("rappricelists", "2019-01-28-RapPriceList.csv")
-
     #import rappaport price list
-    df_rap_price_list =  pd.read_csv(csv_path, sep=',', header=0,\
+    price_list_file = utils.get_gcloud_file("rappricelists", "2019-01-28-RapPriceList.csv")
+    df_rap_price_list =  pd.read_csv(price_list_file, sep=',', header=0,\
         names = ['Shape','Clarity','Color','MinCarat','MaxCarat','PricePerCar','Date'])     
 
     # filter out bad rows here - update in future if necessary
-    #df = current_df[(current_df.Lab == "GIA") & (current_df['Price Per Carat'] > 0)] 
-    df = current_df[(current_df.Lab == "GIA") & (current_df['Price Per Carat'] > 0)] 
-
-# TODO - FIX ERROR MSG
-# curvecalc.py:589: SettingWithCopyWarning: 
-# A value is trying to be set on a copy of a slice from a DataFrame.
-# Try using .loc[row_indexer,col_indexer] = value instead
-
-
     current_df['RapPriceKey'] = current_df['Weight'].apply(utils.rap_price_key)
     current_df['RapShapeKey'] = current_df['Shape'].apply(utils.rap_shape_key)
-
+    current_df = current_df[(current_df.Lab == "GIA") & (current_df['Price Per Carat'] > 0)] 
 
     df = pd.merge(current_df, df_rap_price_list, how = 'left', left_on = ['RapShapeKey','Color','Clarity','RapPriceKey'],
                    right_on = ['Shape','Color','Clarity','MinCarat'], suffixes = ['','_pl'])
+
     df.rename(columns={'PricePerCar':'RapPricePerCarat'}, inplace=True)
 
-    df.loc[df[df.RapPricePerCarat.isnull()].index, 'RapPricePerCarat'] = -999999
     df['TotalPrice'] = df['Price Per Carat'] * df['Weight'] #l.Price represents price per carat
     df['ShapeDiscKey'] = df['Weight'].apply(utils.shape_disc_key)
     df['DiscountShapeKey'] = df['Shape'].apply(utils.discount_shape_key)
+    df.loc[df[df.RapPricePerCarat.isnull()].index, 'RapPricePerCarat'] = -999999
     df['ExactPctRap'] = (df['Price Per Carat'] - df['RapPricePerCarat']) / df['RapPricePerCarat']
     df['Ratio'] = df['Measurements'].apply(utils.ratio)
     df['DepthDiff'] = df['Depth Percent'].apply(utils.depth_diff)
     df['RatioDiff'] = df['Ratio'].apply(utils.ratio_diff)
     df['SymRank'] = df['Symmetry'].apply(utils.grade_rank)
+    df.to_csv('/local/df-tmp.csv')
 
     df_p = df.query('Shape == "Princess"')
 
@@ -617,36 +626,45 @@ def load_data(file_date):
 
 def run(file_date):
     df, df_rap_price_list = load_data(file_date)
-
     write_excel(df, wp_path, file_date, df_rap_price_list)
 
-try:
-    start_time = datetime.now()
-    if __name__ == '__main__':
-        import argparse
-        parser = argparse.ArgumentParser(description='Process some integers.')
-        parser.add_argument('--date', help='date to process')
-        args = parser.parse_args()
-        file_date = datetime.now().strftime("%Y%m%d")
-        if args.date:
-            file_date = args.date
-        run(file_date)
-    end_time=datetime.now()
 
-    duration = end_time - start_time
-    message =  """\
-    Subject: Curvecalc.py Successful
 
-    Start Time = {0} \n
-    End Time = {1} \n
-    Run Duration = {2} \n
-    \n
-    HUZZAH!!""".format(start_time, end_time, duration)
+#try:
+start_time = datetime.now()
+todays_filename = datetime.today().strftime("%Y-%m-%d")+'-FullRapFile.csv'
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser(description='Process some integers.')
+    parser.add_argument('--date', help='date to process')
+    args = parser.parse_args()
+    file_date = datetime.now().strftime("%Y%m%d")
+    if args.date:
+        file_date = args.date
+    run(file_date)
 
-    utils.send_email("joe.mellet@gmail.com", message)
-    utils.stop_server()
+end_time=datetime.now()
+duration = end_time - start_time
+message =  """\
+Subject: Curvecalc.py Successful
 
-except Exception:
-     utils.send_email("joe.mellet@gmail.com", "Subject: Curvecalulator Failed")
-     utils.stop_server()
+Start Time = {0} \n
+End Time = {1} \n
+Run Duration = {2} \n
+Filename =  {3} \n
+\n
+HUZZAH!!""".format(start_time, end_time, duration, todays_filename)
+
+utils.send_email("joe.mellet@gmail.com", message)
+utils.stop_server()
+
+#except Exception as e:
+#    message =  """\
+#    Subject: Curvecalculator Failed
+#
+#    Error = {0} \n
+#    \n
+#    """.format(e)
+#    utils.send_email("joe.mellet@gmail.com", message)
+#    utils.stop_server()
 
