@@ -25,10 +25,10 @@ all_countries = ['usa', 'canada', 'united kingdom', 'hong kong', 'india', 'belgi
             'thailand', 'uae', 'china', 'south africa', 'new zealand', 'australia', 'france', 'singapore', 'italy', 'uzbekistan', 'uganda']
 usa_only = ['usa']
 
-colors = ['H'] #['D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M'] 
-clars = ['SI2'] #['IF', 'VVS1', 'VVS2', 'VS1', 'VS2', 'SI1', 'SI2', 'SI3', 'I1', 'I2', 'I3'] 
-colors_plot = ['H'] #['D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M'] 
-clars_plot = ['SI2'] #['IF', 'VVS1', 'VVS2', 'VS1', 'VS2', 'SI1', 'SI2', 'I1'] 
+colors = ['D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M'] 
+clars = ['IF', 'VVS1', 'VVS2', 'VS1', 'VS2', 'SI1', 'SI2', 'SI3', 'I1', 'I2', 'I3'] 
+colors_plot = ['D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M'] 
+clars_plot = ['IF', 'VVS1', 'VVS2', 'VS1', 'VS2', 'SI1', 'SI2', 'I1'] 
 coffee_pot_colors = ['F', 'G', 'H', 'I', 'J']
 coffee_pot_clars = ['VS1', 'VS2', 'SI1', 'SI2']
 
@@ -112,7 +112,29 @@ def price_curve_generator_all(df, wp_path, file_date):
         	& (df_caratfilt.Symmetry.isin(sym)) \
         	& (df_caratfilt['Fluorescence Intensity'].isin(fluor_none))]
 
-        carat_bins = [(1.00, 1.50, 1.00, 1.49, 1.00, 2, 'rc1', rc1)]
+#        carat_bins = [(1.00, 1.50, 1.00, 1.49, 1.00, 2, 'rc1', rc1)]
+        carat_bins = [ \
+                  (0.00, 0.04, 0.01, 0.03, 0.01, 1, 'r01', r01),\
+                  (0.04, 0.08, 0.04, 0.07, 0.04, 1, 'r04', r04),\
+                  (0.08, 0.15, 0.08, 0.14, 0.08, 1, 'r08', r08),\
+                  (0.15, 0.18, 0.15, 0.17, 0.15, 1, 'r15', r15),\
+                  (0.18, 0.23, 0.18, 0.22, 0.18, 1, 'r18', r18),\
+                  (0.23, 0.30, 0.23, 0.29, 0.23, 1, 'r23', r23),\
+                  (0.30, 0.40, 0.30, 0.39, 0.30, 1, 'r30', r30),\
+                  (0.40, 0.50, 0.40, 0.49, 0.40, 1, 'r40', r40),\
+                  (0.50, 0.60, 0.50, 0.59, 0.50, 1, 'r50', r50),\
+                  (0.60, 0.70, 0.60, 0.69, 0.50, 1, 'r60', r60),\
+                  (0.70, 0.80, 0.70, 0.79, 0.70, 1, 'r70', r70),\
+                  (0.80, 0.90, 0.80, 0.89, 0.70, 1, 'r80', r80),\
+                  (0.90, 1.00, 0.90, 0.99, 0.90, 1, 'r90', r90),\
+                  (1.00, 1.50, 1.00, 1.49, 1.00, 2, 'rc1', rc1),\
+                  (1.50, 2.00, 1.50, 1.99, 1.50, 2, 'rcr', rcr),\
+                  (2.00, 3.00, 2.00, 2.99, 2.00, 2, 'rc2', rc2),\
+                  (3.00, 4.00, 3.00, 3.99, 3.00, 2, 'rc3', rc3),\
+                  (4.00, 5.00, 4.00, 4.99, 4.00, 2, 'rc4', rc4),\
+                  (5.00, 10.00, 5.00, 9.99, 5.00, 2, 'rc5', rc5),\
+                  (10.00, 30.00, 10.00, 29.99, 10.00, 2, 'rct', rct)\
+                  ]
 
         for i in range(len(carat_bins)):
             fxn_min = carat_bins[i][0]
@@ -281,10 +303,13 @@ def price_curve_generator_all(df, wp_path, file_date):
     #df_output.to_excel('/home/oliver/Dropbox/whitepine/price_curve_params.csv')
     df_sel = df_output[((df_output.PolyDegree == 1) & (df_output.Px1 < 0))
                             | ((df_output.PolyDegree == 2) & (df_output.Px1 > 80000))]
+    df_output.loc[df_sel.index, 'PolyDegree'] = -999999
     df_output.loc[df_sel.index, 'Px2'] = -999999
     df_output.loc[df_sel.index, 'Px1'] = -999999
     df_output.loc[df_sel.index, 'Px0'] = -999999
     df_output.loc[df_sel.index, 'StdDev'] = -999999
+    df_output.loc[df_sel.index, 'ResidSlope'] = -999999
+    df_output.loc[df_sel.index, 'ResidCept'] = -999999
 
     #renaming columns to match database, adding file date
 
@@ -604,8 +629,8 @@ def load_data(file_date):
 
     # TODO - AUTOMATICALLY GET LATSEST FILE - COMPARE TO TODAY'S DATE or PASS IN FILENAME FROM TRIGGERING FXN
     #rap_data_file = '/local/2019-01-31-FullRapFile.csv'
-    rap_data_file = '/local/rap-test-data.csv'
-    #rap_data_file = utils.get_gcloud_file("rapdvtfiles", "2019-01-23-FullRapFile.csv") 
+    #rap_data_file = '/local/rap-test-data.csv'
+    rap_data_file = utils.get_gcloud_file("rapdvtfiles", "2019-01-23-FullRapFile.csv") 
     
     current_df = pd.read_csv(rap_data_file, dtype=csv_data_types, usecols=csv_columns)
 
