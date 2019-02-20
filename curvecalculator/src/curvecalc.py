@@ -317,13 +317,14 @@ def price_curve_generator_all(df, wp_path, file_date):
     return df_output
 
 def create_shape_discs(df):
-    output_df = df[df['Fluorescence Intensity'].isin(fluor_none_and_faint)].groupby(['Shape', 'Color', 'Clarity', 'ShapeDiscKey']).agg({"Price Percentage":np.mean, "Polish":len}) 
+    output_df = df[df['Fluorescence Intensity'].isin(fluor_none_and_faint)].groupby(['Shape', 'Color', 'Clarity', 'ShapeDiscKey']).agg({"Price Percentage":np.mean, "Polish":len})
     idx = output_df.index.map(lambda idx: "{}_{}_{}_{}".format(idx[1],idx[2],idx[3],idx[0]))
     output_df = output_df.reset_index()
     output_df.index = idx
     output_df.index.name = 'shapediscountkey'
     output_df.columns = ['shape','color','clarity','minweight','avgdiscount','numstones']
     output_df.loc[:,'rapfiledate'] = pd.Series(utils.file_date_output(), index=output_df.index)
+    output_df = output_df[output_df['avgdiscount'].notnull()]
     return output_df
 
 def write_excel(df, wp_path, file_date, df_rap_price_list):
@@ -613,7 +614,7 @@ def write_excel(df, wp_path, file_date, df_rap_price_list):
     #load rap price list, rename columns, reformat date, write to excel
     temp = df_rap_price_list #.reset_index()
     temp.columns = ['Shape','Clarity','Color','Min Wght','Max Wght','Price','Date']
-    temp['Date'] = temp.apply(lambda x: '%s-%s-%s' %(x['Date'].split('/')[2],x['Date'].split('/')[0],x['Date'].split('/')[1]), axis=1)
+    #temp['Date'] = temp.apply(lambda x: '%s-%s-%s' %(x['Date'].split('/')[2],x['Date'].split('/')[0],x['Date'].split('/')[1]), axis=1)
     temp['pricelistkey'] = temp.apply(lambda x: '%s_%s_%s_%s' %(x['Shape'], x['Color'], x['Clarity'], x['Min Wght']), axis=1)
     temp = temp.set_index(['pricelistkey'])
     new_cols = ['shape','clarity','color','minweight','maxweight','price','lastpricechangedate']
