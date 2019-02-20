@@ -6,7 +6,11 @@ import numpy as np
 import math
 from google.cloud import storage
 import sys
+from datetime import datetime
 
+
+def file_date_output():
+    return datetime.today().strftime("%Y-%m-%d")
 
 def get_gcloud_file(bucket_name, file_name):
 	tmp_filename = '/tmp/download.csv'

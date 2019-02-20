@@ -286,6 +286,9 @@ def price_curve_generator_all(df, wp_path, file_date):
     df_output.loc[df_sel.index, 'Px0'] = -999999
     df_output.loc[df_sel.index, 'StdDev'] = -999999
 
+    #renaming columns to match database, adding file date
+
+
     return df_output
 
 def create_shape_discs(df):
@@ -293,14 +296,22 @@ def create_shape_discs(df):
     idx = output_df.index.map(lambda idx: "{}_{}_{}_{}".format(idx[1],idx[2],idx[3],idx[0]))
     output_df = output_df.reset_index()
     output_df.index = idx
-    output_df.columns = ['Shape','Color','Clarity','Min Wght','Avg Discount','Num Stones']
+    output_df.index.name = 'shapediscountkey'
+    output_df.columns = ['shape','color','clarity','minweight','avgdiscount','numstones']
+    output_df.loc[:,'rapfiledate'] = pd.Series(utils.file_date_output(), index=output_df.index)
     return output_df
 
 def write_excel(df, wp_path, file_date, df_rap_price_list):
     file_name = path.join(wp_path, 'prdt_optimized_{0}.xlsx'.format(datetime.now().strftime("%Y-%m-%d-%H%M")))
     df_price_curves = price_curve_generator_all(df, wp_path, file_date)
     writer = pd.ExcelWriter(file_name)
-    df_price_curves.to_excel(writer, 'PRICE PARAMS')
+
+    #renaming columns to match database, adding file date, and writing to xcel
+    df_excel = df_price_curves.copy()
+    df_excel.index.name = 'paramkey'
+    df_excel.loc[:,'rapfiledate'] = pd.Series(utils.file_date_output(), index=df_excel.index)
+    df_excel.rename(columns={'Shape':'shape','Color':'color','Clarity':'clarity','CurveKey':'curvekey','CurveRangeMin':'curverangemin','PolyDegree':'polydegree', 'Px2':'px2', 'Px1':'px1', 'Px0':'px0', 'StdDev':'stddev', 'NumStones':'numstones', 'ResidSlope':'residslope', 'ResidCept':'residcept'}, inplace=True)
+    df_excel.to_excel(writer, 'PRICE PARAMS')
 
     create_shape_discs(df).to_excel(writer, 'SHAPE DISCS')
 
@@ -391,7 +402,6 @@ def write_excel(df, wp_path, file_date, df_rap_price_list):
                              'PR DepthDiff Coefficient' : [], 'PR Sym Rank Coefficient' : [], \
                              'PR DepthDiff T-Stat' : [], 'PR Sym Rank T-Stat' : []}
 
-    # TODO - ADD FILE DATE COLUMN
     for p in range(len(discount_bins)):
         min_carat = discount_bins[p][0]
         max_carat = discount_bins[p][1]
@@ -566,15 +576,24 @@ def write_excel(df, wp_path, file_date, df_rap_price_list):
     tuples = zip(*arrays)
     index = pd.MultiIndex.from_tuples(tuples)
 
-    df_discount_output = pd.DataFrame(discount_output, index=index,  columns=['RB Avg Discount', 'RB Median Discount', 'RB Discount Stdev', \
-                             'PR DepthDiff Coefficient', 'PR Sym Rank Coefficient', \
-                             'PR DepthDiff T-Stat', 'PR Sym Rank T-Stat', 'Num Stones'])
+    df_discount_output = pd.DataFrame(discount_output, index=index,  columns=['RB Avg Discount', 'RB Median Discount', 'RB Discount Stdev', 'PR DepthDiff Coefficient', 'PR Sym Rank Coefficient', 'PR DepthDiff T-Stat', 'PR Sym Rank T-Stat', 'Num Stones'])
+ 
 
+    #rename columns and add file date before passing to excel
+    df_discount_output.loc[:,'rapfiledate'] = pd.Series(utils.file_date_output(), index=df_discount_output.index)
+    new_cols=['rbavgdiscount', 'rbmediandiscount', 'rbdiscountstdev', 'prdepthdiffcoefficient', 'prsymrankcoefficient', 'prdepthdifftstat', 'prsymranktstat', 'numstones','rapfiledate']
+    df_discount_output.rename(columns=dict(zip(df_discount_output.columns, new_cols)),inplace=True)
     df_discount_output.to_excel(writer, 'DISCOUNTS LIST')
+
+    #load rap price list, rename columns, reformat date, write to excel
     temp = df_rap_price_list #.reset_index()
     temp.columns = ['Shape','Clarity','Color','Min Wght','Max Wght','Price','Date']
-    temp['Idx'] = temp.apply(lambda x: '%s_%s_%s_%s' %(x['Shape'], x['Color'], x['Clarity'], x['Min Wght']), axis=1)
-    temp = temp.set_index(['Idx'])
+    temp['Date'] = temp.apply(lambda x: '%s-%s-%s' %(x['Date'].split('/')[2],x['Date'].split('/')[0],x['Date'].split('/')[1]), axis=1)
+    temp['pricelistkey'] = temp.apply(lambda x: '%s_%s_%s_%s' %(x['Shape'], x['Color'], x['Clarity'], x['Min Wght']), axis=1)
+    temp = temp.set_index(['pricelistkey'])
+    new_cols = ['shape','clarity','color','minweight','maxweight','price','lastpricechangedate']
+
+    temp.rename(columns=dict(zip(temp.columns, new_cols)),inplace=True)
     temp.to_excel(writer, 'RAP PRICE LIST')
     pd.DataFrame({'Date': [file_date]}).to_excel(writer, 'sheet1')
     writer.save()
@@ -584,7 +603,8 @@ def load_data(file_date):
     d = datetime.strptime(file_date, "%Y%m%d")
 
     # TODO - AUTOMATICALLY GET LATSEST FILE - COMPARE TO TODAY'S DATE or PASS IN FILENAME FROM TRIGGERING FXN
-    rap_data_file = '/local/2019-01-31-FullRapFile.csv'
+    #rap_data_file = '/local/2019-01-31-FullRapFile.csv'
+    rap_data_file = '/local/rap-test-data.csv'
     #rap_data_file = utils.get_gcloud_file("rapdvtfiles", "2019-01-23-FullRapFile.csv") 
     
     current_df = pd.read_csv(rap_data_file, dtype=csv_data_types, usecols=csv_columns)
