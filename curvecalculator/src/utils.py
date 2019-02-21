@@ -7,8 +7,13 @@ import math
 from google.cloud import storage
 import sys
 from datetime import datetime
+from dateutil.relativedelta import relativedelta, FR
 
 
+def last_fridays_date():
+    last_friday = (datetime.now() + relativedelta(weekday=FR(-1)))
+    return last_friday.strftime("%Y-%m-%d")
+ 
 def file_date_output():
     return datetime.today().strftime("%Y-%m-%d")
 

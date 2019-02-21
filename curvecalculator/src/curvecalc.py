@@ -628,16 +628,15 @@ def write_excel(df, wp_path, file_date, df_rap_price_list):
 def load_data(file_date):
     d = datetime.strptime(file_date, "%Y%m%d")
 
-    # TODO - AUTOMATICALLY GET LATSEST FILE - COMPARE TO TODAY'S DATE or PASS IN FILENAME FROM TRIGGERING FXN
-    #rap_data_file = '/local/2019-01-31-FullRapFile.csv'
-    #rap_data_file = '/local/rap-test-data.csv'
-    rap_data_file = utils.get_gcloud_file("rapdvtfiles", "2019-01-23-FullRapFile.csv") 
-    
+    # Load latest file 
+    # rap_data_file = '/local/2019-01-31-FullRapFile.csv'
+    # rap_data_file = '/local/rap-test-data.csv'
+    # rap_data_file = utils.get_gcloud_file("rapdvtfiles", "2019-01-23-FullRapFile.csv") 
+    rap_data_file = utils.get_gcloud_file("rapdvtfiles", todays_filename) 
     current_df = pd.read_csv(rap_data_file, dtype=csv_data_types, usecols=csv_columns)
 
-    # TODO - AUTOMATICALLY GET LATEST FILE
     #import rappaport price list
-    price_list_file = utils.get_gcloud_file("rappricelists", "2019-01-28-RapPriceList.csv")
+    price_list_file = utils.get_gcloud_file("rappricelists", utils.last_fridays_date() + "-RapPriceList.csv")
     df_rap_price_list =  pd.read_csv(price_list_file, sep=',', header=0,\
         names = ['Shape','Clarity','Color','MinCarat','MaxCarat','PricePerCar','Date'])     
 
@@ -660,7 +659,6 @@ def load_data(file_date):
     df['DepthDiff'] = df['Depth Percent'].apply(utils.depth_diff)
     df['RatioDiff'] = df['Ratio'].apply(utils.ratio_diff)
     df['SymRank'] = df['Symmetry'].apply(utils.grade_rank)
-    df.to_csv('/local/df-tmp.csv')
 
     df_p = df.query('Shape == "Princess"')
 
@@ -675,42 +673,41 @@ def run(file_date):
     write_excel(df, wp_path, file_date, df_rap_price_list)
 
 
+try:
+    start_time = datetime.now()
+    todays_filename = datetime.today().strftime("%Y-%m-%d")+'-FullRapFile.csv'
+    if __name__ == '__main__':
+        import argparse
+        parser = argparse.ArgumentParser(description='Process some integers.')
+        parser.add_argument('--date', help='date to process')
+        args = parser.parse_args()
+        file_date = datetime.now().strftime("%Y%m%d")
+        if args.date:
+            file_date = args.date
+        run(file_date)
 
-#try:
-start_time = datetime.now()
-todays_filename = datetime.today().strftime("%Y-%m-%d")+'-FullRapFile.csv'
-if __name__ == '__main__':
-    import argparse
-    parser = argparse.ArgumentParser(description='Process some integers.')
-    parser.add_argument('--date', help='date to process')
-    args = parser.parse_args()
-    file_date = datetime.now().strftime("%Y%m%d")
-    if args.date:
-        file_date = args.date
-    run(file_date)
+    end_time=datetime.now()
+    duration = end_time - start_time
+    message =  """\
+    Subject: Curvecalc.py Successful
 
-end_time=datetime.now()
-duration = end_time - start_time
-message =  """\
-Subject: Curvecalc.py Successful
+    Start Time = {0} \n
+    End Time = {1} \n
+    Run Duration = {2} \n
+    Filename =  {3} \n
+    \n
+    HUZZAH!!""".format(start_time, end_time, duration, todays_filename)
 
-Start Time = {0} \n
-End Time = {1} \n
-Run Duration = {2} \n
-Filename =  {3} \n
-\n
-HUZZAH!!""".format(start_time, end_time, duration, todays_filename)
+    utils.send_email("joe.mellet@gmail.com", message)
+    utils.stop_server()
 
-utils.send_email("joe.mellet@gmail.com", message)
-utils.stop_server()
+except Exception as e:
+    message =  """\
+    Subject: Curvecalculator Failed
 
-#except Exception as e:
-#    message =  """\
-#    Subject: Curvecalculator Failed
-#
-#    Error = {0} \n
-#    \n
-#    """.format(e)
-#    utils.send_email("joe.mellet@gmail.com", message)
-#    utils.stop_server()
+    Error = {0} \n
+    \n
+    """.format(e)
+    utils.send_email("joe.mellet@gmail.com", message)
+    utils.stop_server()
 

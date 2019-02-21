@@ -18,7 +18,7 @@ EXPOSE 8080
 
 # Define environment variable
 # ENV NAME World
-ENV GOOGLE_APPLICATION_CREDENTIALS = "/Users/joemellet/src/devutils/wpdvt-228113-ddc6feae2593.json"
+# ENV GOOGLE_APPLICATION_CREDENTIALS = "/Users/joemellet/src/devutils/wpdvt-228113-ddc6feae2593.json"
 
 # Run app.py when the container launches
 CMD ["python", "curvecalc.py"]
