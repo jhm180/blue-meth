@@ -737,11 +737,9 @@ try:
     Hostname = {4} \n
     \n
     HUZZAH!!""".format(start_time, end_time, duration, todays_filename, os.environ['VM_NAME'])
-
-    utils.send_email("joe.mellet@gmail.com", message)
-    if os.environ['VM_NAME'] == 'JHMLaptop':
-        pass
-    else: 
+    if os.environ['SUCCESS_EMAIL_TOGGLE'] == 'EmailOn':
+        utils.send_email("joe.mellet@gmail.com", message)
+    if os.environ['VM_NAME'] != 'JHMLaptop':
         utils.stop_server(os.environ['VM_NAME'])
 
 except Exception as e:
@@ -751,8 +749,7 @@ except Exception as e:
     Error = {0} \n
     \n
     """.format(e)
-    utils.send_email("joe.mellet@gmail.com", message)
-    if os.environ['VM_NAME'] == 'JHMLaptop':
-        pass
-    else: 
+    if os.environ['FAIL_EMAIL_TOGGLE'] == 'EmailOn':
+        utils.send_email("joe.mellet@gmail.com", message)
+    if os.environ['VM_NAME'] != 'JHMLaptop':
         utils.stop_server(os.environ['VM_NAME'])

@@ -19,6 +19,8 @@ COPY src /app
 #ENV DB_PW BBIgbGkD5IIDHfGx
 #ENV DB_UPLOAD_TOGGLE False
 #ENV VM_NAME JHMLaptop
+#ENV SUCCESS_EMAIL_TOGGLE EmailOn 
+#ENV FAIL_EMAIL_TOGGLE EmailOn 
 #ENV GOOGLE_APPLICATION_CREDENTIALS = "/Users/joemellet/src/devutils/wpdvt-228113-ddc6feae2593.json"
 
 # Make port 80 available to the world outside this container
