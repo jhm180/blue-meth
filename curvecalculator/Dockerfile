@@ -13,12 +13,17 @@ RUN pip install -r requirements.txt
 
 COPY src /app
 
+#ENV DB_HOST db-proxy
+#ENV DB_NAME dvt-db-staging
+#ENV DB_USER pgadminuser
+#ENV DB_PW BBIgbGkD5IIDHfGx
+#ENV DB_UPLOAD_TOGGLE False
+#ENV VM_NAME JHMLaptop
+#ENV GOOGLE_APPLICATION_CREDENTIALS = "/Users/joemellet/src/devutils/wpdvt-228113-ddc6feae2593.json"
+
 # Make port 80 available to the world outside this container
 EXPOSE 8080
 
-# Define environment variable
-# ENV NAME World
-# ENV GOOGLE_APPLICATION_CREDENTIALS = "/Users/joemellet/src/devutils/wpdvt-228113-ddc6feae2593.json"
 
 # Run app.py when the container launches
 CMD ["python", "curvecalc.py"]

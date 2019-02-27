@@ -41,13 +41,12 @@ def send_email(receiver_email, message):
 		server.login(sender_email, password)
 		server.sendmail(sender_email, receiver_email, message)
 
-def stop_server():
+def stop_server(server_name):
 	project = 'wpdvt-228113'  # TODO: Move to ENV file. 
-	zone = 'us-east1-b'  # TODO: Move to ENV file. 
-	instance = 'curvecalc'  # TODO: Move to ENV file. 
+	zone = 'us-central1-a'  # TODO: Move to ENV file. 
 	credentials = GoogleCredentials.get_application_default()
 	service = discovery.build('compute', 'v1', credentials=credentials)
-	request = service.instances().stop(project=project, zone=zone, instance=instance)
+	request = service.instances().stop(project=project, zone=zone, instance=server_name)
 	response = request.execute()
 
 def ratio(measurement):
@@ -247,3 +246,55 @@ def price_curve_key(wt):
     else:
         return -999999.0
 
+discount_upsert_query = "INSERT INTO dvt.discounts (discountkey, rbavgdiscount, rbmediandiscount, rbdiscountstdev, prdepthdiffcoefficient, prsymrankcoefficient, prdepthdifftstat, prsymranktstat, numstones, rapfiledate) \
+VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) \
+ON CONFLICT (discountkey) \
+DO UPDATE \
+SET rbavgdiscount = EXCLUDED.rbavgdiscount, \
+rbmediandiscount = EXCLUDED.rbmediandiscount, \
+rbdiscountstdev = EXCLUDED.rbdiscountstdev, \
+prdepthdiffcoefficient = EXCLUDED.prdepthdiffcoefficient, \
+prsymrankcoefficient = EXCLUDED.prsymrankcoefficient, \
+prdepthdifftstat = EXCLUDED.prdepthdifftstat, \
+prsymranktstat = EXCLUDED.prsymranktstat, \
+numstones = EXCLUDED.numstones, \
+rapfiledate = EXCLUDED.rapfiledate"
+
+
+rap_price_list_upsert_query = "INSERT INTO dvt.rappricelist (pricelistkey, shape, clarity, color, minweight, maxweight, price, lastpricechangedate) \
+VALUES (%s, %s, %s, %s, %s, %s, %s, %s) \
+ON CONFLICT (pricelistkey) \
+DO UPDATE \
+SET price = EXCLUDED.price, lastpricechangedate = EXCLUDED.lastpricechangedate \
+WHERE dvt.rappricelist.price <> EXCLUDED.price"
+
+price_params_upsert_query = "INSERT INTO dvt.priceparams (paramkey, shape, color, clarity, curvekey, curverangemin, polydegree, px2, px1, px0, stddev, numstones, residslope, residcept, rapfiledate) \
+VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) \
+ON CONFLICT (paramkey) \
+DO UPDATE \
+SET shape = EXCLUDED.shape, \
+color = EXCLUDED.color, \
+clarity = EXCLUDED.clarity, \
+curvekey = EXCLUDED.curvekey, \
+curverangemin = EXCLUDED.curverangemin, \
+polydegree = EXCLUDED.polydegree, \
+px2 = EXCLUDED.px2, \
+px1 = EXCLUDED.px1, \
+px0 = EXCLUDED.px0, \
+stddev = EXCLUDED.stddev, \
+numstones = EXCLUDED.numstones, \
+residslope = EXCLUDED.residslope, \
+residcept = EXCLUDED.residcept, \
+rapfiledate = EXCLUDED.rapfiledate" 
+
+shape_discs_upsert_query  = "INSERT INTO dvt.shapediscounts (shapediscountkey, shape, color, clarity, minweight, avgdiscount, numstones, rapfiledate) \
+VALUES (%s, %s, %s, %s, %s, %s, %s, %s) \
+ON CONFLICT (shapediscountkey) \
+DO UPDATE \
+SET shape = EXCLUDED.shape, \
+color = EXCLUDED.color, \
+clarity = EXCLUDED.clarity, \
+minweight = EXCLUDED.minweight, \
+avgdiscount = EXCLUDED.avgdiscount, \
+numstones = EXCLUDED.numstones, \
+rapfiledate = EXCLUDED.rapfiledate"

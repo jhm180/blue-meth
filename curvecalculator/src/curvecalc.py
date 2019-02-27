@@ -15,6 +15,8 @@ from os import path
 import os
 import openpyxl
 import utils
+import psycopg2
+import math
 
 # TOCHECK - PRINCESS OUTPUT BROKEN - DONE... VERIFY
 # TOCHECK - COMPLARE ILOC / IX OUTPUT AFTER FIX   
@@ -112,7 +114,7 @@ def price_curve_generator_all(df, wp_path, file_date):
         	& (df_caratfilt.Symmetry.isin(sym)) \
         	& (df_caratfilt['Fluorescence Intensity'].isin(fluor_none))]
 
-#        carat_bins = [(1.00, 1.50, 1.00, 1.49, 1.00, 2, 'rc1', rc1)]
+        #carat_bins = [(1.00, 1.50, 1.00, 1.49, 1.00, 2, 'rc1', rc1)]
         carat_bins = [ \
                   (0.00, 0.04, 0.01, 0.03, 0.01, 1, 'r01', r01),\
                   (0.04, 0.08, 0.04, 0.07, 0.04, 1, 'r04', r04),\
@@ -300,7 +302,6 @@ def price_curve_generator_all(df, wp_path, file_date):
                      columns = ['Shape','Color','Clarity','CurveKey','CurveRangeMin','PolyDegree', 'Px2', 'Px1', 'Px0', 'StdDev', 'NumStones', 'ResidSlope', 'ResidCept'] 
                      )
 
-    #df_output.to_excel('/home/oliver/Dropbox/whitepine/price_curve_params.csv')
     df_sel = df_output[((df_output.PolyDegree == 1) & (df_output.Px1 < 0))
                             | ((df_output.PolyDegree == 2) & (df_output.Px1 > 80000))]
     df_output.loc[df_sel.index, 'PolyDegree'] = -999999
@@ -313,10 +314,10 @@ def price_curve_generator_all(df, wp_path, file_date):
 
     #renaming columns to match database, adding file date
 
-
     return df_output
 
 def create_shape_discs(df):
+    #create df to be written into excel
     output_df = df[df['Fluorescence Intensity'].isin(fluor_none_and_faint)].groupby(['Shape', 'Color', 'Clarity', 'ShapeDiscKey']).agg({"Price Percentage":np.mean, "Polish":len})
     idx = output_df.index.map(lambda idx: "{}_{}_{}_{}".format(idx[1],idx[2],idx[3],idx[0]))
     output_df = output_df.reset_index()
@@ -325,6 +326,16 @@ def create_shape_discs(df):
     output_df.columns = ['shape','color','clarity','minweight','avgdiscount','numstones']
     output_df.loc[:,'rapfiledate'] = pd.Series(utils.file_date_output(), index=output_df.index)
     output_df = output_df[output_df['avgdiscount'].notnull()]
+
+    #write values into DB
+    df_upload = output_df.reset_index(level=[0])
+    df_upload['numstones'] = df_upload['numstones'].astype(float)
+
+    if os.environ['DB_UPLOAD_TOGGLE'] == "upload-on":
+        for i in range(len(df_upload)):
+            values = tuple(df_upload.iloc[i])
+            cur.execute(utils.shape_discs_upsert_query, values)
+
     return output_df
 
 def write_excel(df, wp_path, file_date, df_rap_price_list):
@@ -338,8 +349,19 @@ def write_excel(df, wp_path, file_date, df_rap_price_list):
     df_excel.loc[:,'rapfiledate'] = pd.Series(utils.file_date_output(), index=df_excel.index)
     df_excel.rename(columns={'Shape':'shape','Color':'color','Clarity':'clarity','CurveKey':'curvekey','CurveRangeMin':'curverangemin','PolyDegree':'polydegree', 'Px2':'px2', 'Px1':'px1', 'Px0':'px0', 'StdDev':'stddev', 'NumStones':'numstones', 'ResidSlope':'residslope', 'ResidCept':'residcept'}, inplace=True)
     df_excel.to_excel(writer, 'PRICE PARAMS')
-
     create_shape_discs(df).to_excel(writer, 'SHAPE DISCS')
+
+    # writing price params to DB
+    df_excel = df_excel.reset_index(level=[0])
+    df_excel['polydegree'] = df_excel['polydegree'].astype(float)
+    df_excel['numstones'] = df_excel['numstones'].astype(float)
+    if os.environ['DB_UPLOAD_TOGGLE'] == "upload-on":
+        for i in range(len(df_excel)):
+            if df_excel.iloc[i]['polydegree'] != -999999.0:
+                values = tuple(df_excel.iloc[i])
+                cur.execute(utils.price_params_upsert_query, values)
+            else:
+                pass
 
     df['PriceCurveKey'] = df['Weight'].apply(utils.price_curve_key)
     df_index_cols = ['DiscountShapeKey','Color','Clarity','PriceCurveKey']
@@ -462,9 +484,14 @@ def write_excel(df, wp_path, file_date, df_rap_price_list):
 
                 df_temp = df_discount[(df_discount['Color'].isin(color)) & (df_discount['Clarity'].isin(clar))]
 
+
                 avg_discount = np.mean(df_temp['ExactPctRap'] - df_temp['PredictedPctRap'])
                 med_discount = np.median(df_temp['ExactPctRap'] - df_temp['PredictedPctRap'])
                 std_discount = np.std(df_temp['ExactPctRap'] - df_temp['PredictedPctRap'])
+                if math.isnan(avg_discount):
+                    avg_discount = -999999
+                    med_discount = -999999
+                    std_discount = -999999
 
                 if shape == 'Round':
                     if len(df_temp) == 0:
@@ -479,10 +506,8 @@ def write_excel(df, wp_path, file_date, df_rap_price_list):
                                 discount_output['RB Median Discount'].append(-999999)
                                 discount_output['RB Discount Stdev'].append(-999999)
                                 discount_output['Num Stones'].append(0)
-                                #discount_output['PR Intercept Coefficient'].append(-999999)
                                 discount_output['PR DepthDiff Coefficient'].append(-999999)
                                 discount_output['PR Sym Rank Coefficient'].append(-999999)
-                                #discount_output['PR Intercept T-Stat'].append(-999999)
                                 discount_output['PR DepthDiff T-Stat'].append(-999999)
                                 discount_output['PR Sym Rank T-Stat'].append(-999999)
 
@@ -498,10 +523,8 @@ def write_excel(df, wp_path, file_date, df_rap_price_list):
                                 discount_output['RB Median Discount'].append(-999999)
                                 discount_output['RB Discount Stdev'].append(-999999)
                                 discount_output['Num Stones'].append(len(df_temp))
-                                #discount_output['PR Intercept Coefficient'].append(-999999)
                                 discount_output['PR DepthDiff Coefficient'].append(-999999)
                                 discount_output['PR Sym Rank Coefficient'].append(-999999)
-                                #discount_output['PR Intercept T-Stat'].append(-999999)
                                 discount_output['PR DepthDiff T-Stat'].append(-999999)
                                 discount_output['PR Sym Rank T-Stat'].append(-999999)
 
@@ -517,10 +540,8 @@ def write_excel(df, wp_path, file_date, df_rap_price_list):
                                 discount_output['RB Median Discount'].append(med_discount)
                                 discount_output['RB Discount Stdev'].append(std_discount)
                                 discount_output['Num Stones'].append(len(df_temp))
-                                #discount_output['PR Intercept Coefficient'].append(-999999)
                                 discount_output['PR DepthDiff Coefficient'].append(-999999)
                                 discount_output['PR Sym Rank Coefficient'].append(-999999)
-                                #discount_output['PR Intercept T-Stat'].append(-999999)
                                 discount_output['PR DepthDiff T-Stat'].append(-999999)
                                 discount_output['PR Sym Rank T-Stat'].append(-999999)
 
@@ -533,11 +554,9 @@ def write_excel(df, wp_path, file_date, df_rap_price_list):
                                 discount_output['RB Avg Discount'].append(-999999)
                                 discount_output['RB Median Discount'].append(-999999)
                                 discount_output['RB Discount Stdev'].append(-999999)
-                                #discount_output['PR Intercept Coefficient'].append(-999999)
                                 discount_output['PR DepthDiff Coefficient'].append(-999999)
                                 discount_output['PR Sym Rank Coefficient'].append(-999999)
                                 discount_output['Num Stones'].append(0)
-                                #discount_output['PR Intercept T-Stat'].append(-999999)
                                 discount_output['PR DepthDiff T-Stat'].append(-999999)
                                 discount_output['PR Sym Rank T-Stat'].append(-999999)
 
@@ -549,11 +568,9 @@ def write_excel(df, wp_path, file_date, df_rap_price_list):
                                 discount_output['RB Avg Discount'].append(-999999)
                                 discount_output['RB Median Discount'].append(-999999)
                                 discount_output['RB Discount Stdev'].append(-999999)
-                                #discount_output['PR Intercept Coefficient'].append(-999999)
                                 discount_output['PR DepthDiff Coefficient'].append(-999999)
                                 discount_output['PR Sym Rank Coefficient'].append(-999999)
                                 discount_output['Num Stones'].append(len(df_temp))
-                                #discount_output['PR Intercept T-Stat'].append(-999999)
                                 discount_output['PR DepthDiff T-Stat'].append(-999999)
                                 discount_output['PR Sym Rank T-Stat'].append(-999999)
 
@@ -574,11 +591,9 @@ def write_excel(df, wp_path, file_date, df_rap_price_list):
                                     discount_output['RB Avg Discount'].append(-999999)
                                     discount_output['RB Median Discount'].append(-999999)
                                     discount_output['RB Discount Stdev'].append(-999999)
-                                    #discount_output['PR Intercept Coefficient'].append(reg_results.beta['intercept'])
-                                    discount_output['PR DepthDiff Coefficient'].append(reg_results.params[0]) # 'params' are betas for OLS
+                                    discount_output['PR DepthDiff Coefficient'].append(reg_results.params[0])
                                     discount_output['PR Sym Rank Coefficient'].append(reg_results.params[1])
                                     discount_output['Num Stones'].append(len(df_temp))
-                                    #discount_output['PR Intercept T-Stat'].append(reg_results.t_stat['intercept'])
                                     discount_output['PR DepthDiff T-Stat'].append(reg_results.tvalues[0])
                                     discount_output['PR Sym Rank T-Stat'].append(reg_results.tvalues[1])
                         except:
@@ -589,14 +604,11 @@ def write_excel(df, wp_path, file_date, df_rap_price_list):
                                     discount_output['RB Avg Discount'].append(-999999)
                                     discount_output['RB Median Discount'].append(-999999)
                                     discount_output['RB Discount Stdev'].append(-999999)
-                                    #discount_output['PR Intercept Coefficient'].append(reg_results.beta['intercept'])
                                     discount_output['PR DepthDiff Coefficient'].append(-999999) # 'params' are betas for OLS
                                     discount_output['PR Sym Rank Coefficient'].append(-999999)
                                     discount_output['Num Stones'].append(len(df_temp))
-                                    #discount_output['PR Intercept T-Stat'].append(reg_results.t_stat['intercept'])
                                     discount_output['PR DepthDiff T-Stat'].append(-999999)
                                     discount_output['PR Sym Rank T-Stat'].append(-999999)
-
 
     arrays = [discount_output['Tag']]
     tuples = zip(*arrays)
@@ -604,23 +616,46 @@ def write_excel(df, wp_path, file_date, df_rap_price_list):
 
     df_discount_output = pd.DataFrame(discount_output, index=index,  columns=['RB Avg Discount', 'RB Median Discount', 'RB Discount Stdev', 'PR DepthDiff Coefficient', 'PR Sym Rank Coefficient', 'PR DepthDiff T-Stat', 'PR Sym Rank T-Stat', 'Num Stones'])
  
-
     #rename columns and add file date before passing to excel
     df_discount_output.loc[:,'rapfiledate'] = pd.Series(utils.file_date_output(), index=df_discount_output.index)
-    new_cols=['rbavgdiscount', 'rbmediandiscount', 'rbdiscountstdev', 'prdepthdiffcoefficient', 'prsymrankcoefficient', 'prdepthdifftstat', 'prsymranktstat', 'numstones','rapfiledate']
+    new_cols=['rbavgdiscount', 'rbmediandiscount', 'rbdiscountstdev', 'prdepthdiffcoefficient', 'prsymrankcoefficient', 'prdepthdifftstat', 'prsymranktstat', 'numstones', 'rapfiledate']
     df_discount_output.rename(columns=dict(zip(df_discount_output.columns, new_cols)),inplace=True)
     df_discount_output.to_excel(writer, 'DISCOUNTS LIST')
+
+    #create new temporary DF to upload to postgres
+    df_out = df_discount_output.reset_index(level=[0])
+    df_out['prdepthdiffcoefficient'] = df_out['prdepthdiffcoefficient'].astype(float)
+    df_out['prsymrankcoefficient'] = df_out['prsymrankcoefficient'].astype(float)
+    df_out['prdepthdifftstat'] = df_out['prdepthdifftstat'].astype(float)
+    df_out['prsymranktstat'] = df_out['prsymranktstat'].astype(float)
+    df_out['numstones'] = df_out['numstones'].astype(float)
+
+    if os.environ['DB_UPLOAD_TOGGLE'] == "upload-on":
+        for i in range(len(df_out)):
+            if (df_out.iloc[i]['rbavgdiscount'] != -999999.0 and df_out.iloc[i]['level_0'].startswith("RB_")) or \
+            df_out.iloc[i]['prsymrankcoefficient'] != -999999.0 and df_out.iloc[i]['level_0'].startswith("PR_"):
+                values = tuple(df_out.iloc[i])
+                cur.execute(utils.discount_upsert_query, values)
+            else:
+                pass
 
     #load rap price list, rename columns, reformat date, write to excel
     temp = df_rap_price_list #.reset_index()
     temp.columns = ['Shape','Clarity','Color','Min Wght','Max Wght','Price','Date']
-    #temp['Date'] = temp.apply(lambda x: '%s-%s-%s' %(x['Date'].split('/')[2],x['Date'].split('/')[0],x['Date'].split('/')[1]), axis=1)
     temp['pricelistkey'] = temp.apply(lambda x: '%s_%s_%s_%s' %(x['Shape'], x['Color'], x['Clarity'], x['Min Wght']), axis=1)
     temp = temp.set_index(['pricelistkey'])
     new_cols = ['shape','clarity','color','minweight','maxweight','price','lastpricechangedate']
-
     temp.rename(columns=dict(zip(temp.columns, new_cols)),inplace=True)
     temp.to_excel(writer, 'RAP PRICE LIST')
+
+    #upload rap price list to DB
+    temp = temp.reset_index(level=[0])
+    temp['price'] = temp['price'].astype(float)
+    if os.environ['DB_UPLOAD_TOGGLE'] == "upload-on" and datetime.today().weekday() == 5: #only attempt once per week
+        for i in range(len(temp)):
+            values = temp.iloc[i]
+            cur.execute(utils.rap_price_list_upsert_query, values)
+
     pd.DataFrame({'Date': [file_date]}).to_excel(writer, 'sheet1')
     writer.save()
     utils.upload_to_gcloud("curvecalcoutput", file_name, file_name.split("_")[-1])
@@ -628,14 +663,14 @@ def write_excel(df, wp_path, file_date, df_rap_price_list):
 def load_data(file_date):
     d = datetime.strptime(file_date, "%Y%m%d")
 
-    # Load latest file 
+    # Load latest rapnet data dump
     # rap_data_file = '/local/2019-01-31-FullRapFile.csv'
     # rap_data_file = '/local/rap-test-data.csv'
-    # rap_data_file = utils.get_gcloud_file("rapdvtfiles", "2019-01-23-FullRapFile.csv") 
     rap_data_file = utils.get_gcloud_file("rapdvtfiles", todays_filename) 
     current_df = pd.read_csv(rap_data_file, dtype=csv_data_types, usecols=csv_columns)
 
     #import rappaport price list
+    # price_list_file = '/local/rap-price-list.csv'
     price_list_file = utils.get_gcloud_file("rappricelists", utils.last_fridays_date() + "-RapPriceList.csv")
     df_rap_price_list =  pd.read_csv(price_list_file, sep=',', header=0,\
         names = ['Shape','Clarity','Color','MinCarat','MaxCarat','PricePerCar','Date'])     
@@ -674,6 +709,8 @@ def run(file_date):
 
 
 try:
+    conn = psycopg2.connect(host=os.environ['DB_HOST'], port='5432', sslmode='disable', dbname=os.environ['DB_NAME'], user=os.environ['DB_USER'], password=os.environ['DB_PW'])
+    cur = conn.cursor()
     start_time = datetime.now()
     todays_filename = datetime.today().strftime("%Y-%m-%d")+'-FullRapFile.csv'
     if __name__ == '__main__':
@@ -685,6 +722,8 @@ try:
         if args.date:
             file_date = args.date
         run(file_date)
+    conn.commit()
+    conn.close()
 
     end_time=datetime.now()
     duration = end_time - start_time
@@ -695,11 +734,15 @@ try:
     End Time = {1} \n
     Run Duration = {2} \n
     Filename =  {3} \n
+    Hostname = {4} \n
     \n
-    HUZZAH!!""".format(start_time, end_time, duration, todays_filename)
+    HUZZAH!!""".format(start_time, end_time, duration, todays_filename, os.environ['VM_NAME'])
 
     utils.send_email("joe.mellet@gmail.com", message)
-    utils.stop_server()
+    if os.environ['VM_NAME'] == 'JHMLaptop':
+        pass
+    else: 
+        utils.stop_server(os.environ['VM_NAME'])
 
 except Exception as e:
     message =  """\
@@ -709,5 +752,7 @@ except Exception as e:
     \n
     """.format(e)
     utils.send_email("joe.mellet@gmail.com", message)
-    utils.stop_server()
-
+    if os.environ['VM_NAME'] == 'JHMLaptop':
+        pass
+    else: 
+        utils.stop_server(os.environ['VM_NAME'])
