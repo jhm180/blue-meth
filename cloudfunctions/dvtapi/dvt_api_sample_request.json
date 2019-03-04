@@ -29,3 +29,12 @@
 	"centre_pique":,
 	"black_pique":,
 }
+
+
+{
+	"api_key" : "secretsarenofun",
+	"shape" : "round",
+	"weight" : "1.1",
+	"color" : "G",
+	"clarity" : "VVS2",
+}
