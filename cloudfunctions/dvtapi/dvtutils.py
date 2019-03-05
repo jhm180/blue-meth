@@ -2,21 +2,56 @@
 
 
 
-clarity_allow = {"IF":1, "VVS1":2, "VVS2":3, "VS1":4, "VS2":5, "SI1":5, "SI2":7, "I1":8, "I2":9}
-color_allow = {"D":1, "E":2, "F":3, "G":4, "H":5, "I":6, "J":7, "K":8, "L":9, "M":10, "N":11}
+clarity_ranks = {"IF":1, "VVS1":2, "VVS2":3, "VS1":4, "VS2":5, "SI1":5, "SI2":7, "I1":8, "I2":9}
+color_ranks = {"D":1, "E":2, "F":3, "G":4, "H":5, "I":6, "J":7, "K":8, "L":9, "M":10, "N":11}
 
 
-def check_values(value, key, err):
-	if key == "clarity":
-		ok_vals = clarity_allow
-	elif key == "color":
-		ok_vals = color_allow
-	else:
-		ok_vals = "ERR"
-	if value in ok_vals.keys():
-		pass
-	else:
-		err.append("Invalid value for {0} - Allowable values are {1}. \n".format(key, ok_vals.keys()))
+valid_values = {
+"api_key" : {"type":(str)}, 
+"request_type" : {"type":(str)}, 
+"user" : {"type":(str), "type_err_msg":"invalid value for user - expected string"} ,
+"shape" : {"type":(str), "type_err_msg":"invalid value for shape - expected string", "allow_vals":["round","princess"]},
+"weight" : {"type":(float), "type_err_msg":"invalid value for weight - expected float"},
+"color" : {"type":(str), "type_err_msg":"invalid value for shape - expected string", "allow_vals":['D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M']},
+"clarity" : {"type":(str), "type_err_msg":"invalid value for shape - expected string", "allow_vals":['IF', 'VVS1', 'VVS2', 'VS1', 'VS2', 'SI1', 'SI2', 'SI3', 'I1', 'I2', 'I3']},
+"cert_lab" : {"type":(str), "type_err_msg":"invalid value for lab - expected string", "allow_vals":["gia","x"]},
+"recut" : {"type":"bool", "type_warn_msg":"no value for recut detected", "allow_vals":[True, False]},
+"cut_grade": "STONE CUT GRADE - STRING - REQUIRED FOR ROUNDS", 
+"polish" : "STONE POLISH GRADE GRADE STRING - REQUIRED FOR ROUNDS", 
+"symmetry" : "STONE SYMMETRY GRADE GRADE STRING - REQUIRED FOR ROUNDS", 
+"fluor" : "STONE FLUORESENCE - STRING - REUIRED - ALLOWABLE VALS = ",
+"depth_percent":"",
+"table_percent":"",
+"side_len_1":"",
+"side_len_2":"",
+"metal_type":"",
+"metal_weight":"",
+"laser_drilled":"",
+"fracture_filled":"",
+"color_enhanced":"",
+"synthetic_diamond":"",
+"hthp":"",
+"tint":"",
+"milkiness":"",
+"centre_pique":"",
+"black_pique":""
+}
+
+# to do ... check floats and booleans for valid values
+def check_values(json, errs, warns):
+    req_values = ["api_key", "shape", "weight", "color", "clarity"]
+    if all(elem in json.keys() for elem in req_values):
+        pass
+    else:
+        errs.append("JSON body is missing required values. The following keys are required in the JSON body: {}".format(req_values))
+    for key in json.keys():
+        print(key)
+        if key in valid_values.keys():
+            if isinstance(json[key], valid_values[key]['type']):
+                if 'allow_vals' in valid_values[key].keys() and json[key] not in valid_values[key]['allow_vals']:
+                    errs.append("Invalid values for {0} - Received \'{1}\', expected one of the following: {2}. ".format(key, json[key], valid_values[key]['allow_vals']))
+            else:
+                errs.append("Invalid datatype for {0} - Expected {1}, received {2}. ".format(key, valid_values[key]['type'], type(json[key])))
 
 
 def get_curve_key(weight):

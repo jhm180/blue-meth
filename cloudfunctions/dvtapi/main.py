@@ -5,7 +5,7 @@ import os
 from psycopg2 import OperationalError
 from psycopg2.pool import SimpleConnectionPool
 
-# TODO(developer): specify SQL connection details
+# TOMORROW - FINISH value checker, find a way to abort and return error messages after json parsing, api key check an value check
 
 pg_config = {
   'user': os.environ.get('DB_USER'),
@@ -25,15 +25,19 @@ def db_connect(host):
 
 
 def dvt_api_staging(request):
+# instantiate some values 
     global pg_pool
-    request_json = request.get_json(silent=True)
     errs = []
     succ = []
 
-    # Initialize the pool lazily, in case SQL access isn't needed for this
-    # GCF instance. Doing so minimizes the number of active SQL connections,
-    # which helps keep your GCF instances under SQL connection limits.
-    
+## Receive request and parse JSON
+    #to do - error handling if cannot find json request + abort
+    request_json = request.get_json(silent=True)
+
+
+
+## Check JSON for key, abort if not there
+    #TO DO - move to utils + fxn abort 
     def check_api_key(request_json, success_list, error_list):
         try:
             if request_json['api_key'] != "secretsarenofun":
@@ -46,6 +50,19 @@ def dvt_api_staging(request):
     check_api_key(request_json, succ, errs)
 
 
+## Check JSON for required values
+    #TO DO - finish fxn + abort 
+
+
+
+
+## Create DB Lookup keys 
+    param_key = du.get_price_params(request_json)
+    logging.warn(str(param_key))
+
+
+## Do DB Queries
+    #connect to DB
     if not pg_pool:
         try:
             db_connect(f'/cloudsql/wpdvt-228113:us-central1:wpdvt-db')
@@ -53,41 +70,11 @@ def dvt_api_staging(request):
             # If production settings fail, use local development ones
             db_connect('localhost')
 
-    # Remember to close SQL resources declared while running this function.
-    # Keep any declared in global scope (e.g. pg_pool) for later reuse.
-
-    param_key = du.get_price_params(request_json)
-    logging.warn(str(param_key))
 
     with pg_pool.getconn().cursor() as cursor:
         cursor.execute("SELECT * FROM dvt.priceparams WHERE dvt.priceparams.paramkey = %s", (param_key,))
         price_params = cursor.fetchone()
         return price_params
-
-
-# Google sample code - https://github.com/GoogleCloudPlatform/python-docs-samples/blob/master/functions/helloworld/main.py
-# HTTP Request documentation - https://cloud.google.com/functions/docs/writing/http
-
-### FULL THING!!
-## Receive request and parse JSON
-
-
-## Check JSON for key, abort if not there
-
-
-
-## Check JSON for required values
-
-
-
-## Create DB Lookup keys 
-
-
-
-
-## Do DB Queries
-
-
 
 
 ## Do DVT Math
