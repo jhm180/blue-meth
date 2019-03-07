@@ -5,8 +5,6 @@ import os
 from psycopg2 import OperationalError
 from psycopg2.pool import SimpleConnectionPool
 
-# TOMORROW - FINISH value checker, find a way to abort and return error messages after json parsing, api key check an value check
-
 pg_config = {
   'user': os.environ.get('DB_USER'),
   'password': os.environ.get('DB_PW'),
@@ -15,8 +13,8 @@ pg_config = {
 
 # Connection pools reuse connections between invocations, and handle dropped or expired connections automatically.
 pg_pool = None
-# helper function for conneting
 
+# helper function for conneting
 def db_connect(host):
     global pg_pool
     pg_config['host'] = host
@@ -26,26 +24,30 @@ def db_connect(host):
 def dvt_api_staging(request):
 # instantiate some values 
     errs = []
-    succ = []
 
-## Receive request and parse JSON
-    #to do - error handling if cannot find json request + abort    
+## Receive request and parse JSON, abort if no JSON found
     request_json = request.get_json(silent=True)
     if not request_json:
-        return str("ERROR: No json detected in body of request")
+        return str('ERROR: No json detected in body of request. (Note: all values are case sensitive)')
 
 ## Check JSON for api key, abort if missing or invalid
     du.check_api_key(request_json, errs)
     if len(errs) > 0:
-        return ("ERROR: "+str(errs))
+        return ('ERROR: '+str(errs)+' (Note: all values are case sensitive)')
    
-## Check JSON for required values
+## Check JSON for required keys and data validity, abort if incorrect
     du.check_json_values(request_json, errs)
     if len(errs) > 0:
-        return ("ERROR: "+str(errs))
+        return ('ERROR: '+str(errs)+' (Note: all values are case sensitive)')
 
 ## Create DB Lookup keys 
-    param_key = du.get_price_params(request_json)
+    weight_key, shape_disc_weight_group, discounts_weight_group = du.get_curve_key(request_json)
+    shape_key = du.get_shape_key(request_json)
+    discount_group_key_suffix = du.get_discount_group_key(request_json)
+    price_param_key = '{0}_{1}_{2}_{3}'.format(shape_key, request_json['color'], request_json['clarity'], weight_key)
+    shape_discount_key = '{0}_{1}_{2}_{3}'.format(request_json['color'], request_json['clarity'], shape_disc_weight_group, request_json['shape'])
+    discount_key = '{0}_{1}_{2}_{3}_{4}'.format(shape_key, discounts_weight_group, request_json['color'], request_json['clarity'], discount_group_key_suffix) 
+    logging.warn(discount_key)
 
 
 ## Do DB Queries
@@ -58,7 +60,7 @@ def dvt_api_staging(request):
             db_connect('localhost')
 
     with pg_pool.getconn().cursor() as cursor:
-        cursor.execute("SELECT * FROM dvt.priceparams WHERE dvt.priceparams.paramkey = %s", (param_key,))
+        cursor.execute('SELECT * FROM dvt.priceparams WHERE dvt.priceparams.paramkey = %s', (price_param_key,))
         price_params = cursor.fetchone()
         return str(price_params)
 
