@@ -62,57 +62,57 @@ def check_json_values(json, errs):
 def get_curve_key(json):
     weight = json['weight']
     if weight >= 0.01 and weight < 0.04:
-        return 'r01', '0.01', 'no_result'
+        return 'r01', '0.01', 'no_result', '0.01'
     elif weight >= 0.04 and weight < 0.08:
-        return 'r04', '0.04', 'no_result'
+        return 'r04', '0.04', 'no_result', '0.04'
     elif weight >= 0.08 and weight < 0.15:
-        return 'r08', '0.09', 'no_result'
+        return 'r08', '0.08', 'no_result', '0.08'
     elif weight >= 0.15 and weight < 0.18:
-        return 'r15', '0.15', 'no_result'
+        return 'r15', '0.15', 'no_result', '0.15'
     elif weight >= 0.18 and weight < 0.23:
-        return 'r18', '0.18', 'no_result'
+        return 'r18', '0.18', 'no_result', '0.18'
     elif weight >= 0.23 and weight < 0.3:
-        return 'r23', '0.23', '0.23ct_1.0ct'
+        return 'r23', '0.23', '0.23ct_1.0ct', '0.23'
     elif weight >= 0.30 and weight < 0.4:
-        return 'r30', '0.3', '0.23ct_1.0ct'
+        return 'r30', '0.3', '0.23ct_1.0ct', '0.3'
     elif weight >= 0.40 and weight < 0.5:
-        return 'r40', '0.4', '0.23ct_1.0ct'
+        return 'r40', '0.4', '0.23ct_1.0ct', '0.4'
     elif weight >= 0.50 and weight < 0.6:
-        return 'r50', '0.5', '0.23ct_1.0ct'
+        return 'r50', '0.5', '0.23ct_1.0ct', '0.5'
     elif 0.60 <= weight and weight < 0.7:
-        return 'r60', '0.6', '0.23ct_1.0ct'
+        return 'r60', '0.6', '0.23ct_1.0ct', '0.5'
     elif 0.70 <= weight and weight < 0.8:
-        return 'r70', '0.7', '0.23ct_1.0ct'
+        return 'r70', '0.7', '0.23ct_1.0ct', '0.7'
     elif 0.80 <= weight and weight < 0.9:
-        return 'r80', '0.8', '0.23ct_1.0ct'
+        return 'r80', '0.8', '0.23ct_1.0ct', '0.7'
     elif 0.90 <= weight and weight < 1.0:
-        return 'r90', '0.9', '0.23ct_1.0ct'
+        return 'r90', '0.9', '0.23ct_1.0ct', '0.9'
     elif 1.00 <= weight and weight < 1.25:
-        return 'rc1', '1.0', '1.0ct_1.5ct'
+        return 'rc1', '1.0', '1.0ct_1.5ct', '1.0'
     elif 1.25 <= weight and weight < 1.5:
-        return 'rc1', '1.25', '1.0ct_1.5ct'
+        return 'rc1', '1.25', '1.0ct_1.5ct', '1.0'
     elif 1.50 <= weight and weight < 1.75:
-        return 'rcr', '1.5', '1.5ct_2.99ct'
+        return 'rcr', '1.5', '1.5ct_2.99ct', '1.5'
     elif 1.75 <= weight and weight < 2.0:
-        return 'rcr', '1.75', '1.5ct_2.99ct'
+        return 'rcr', '1.75', '1.5ct_2.99ct', '1.5'
     elif 2.00 <= weight and weight < 2.5:
-        return 'rc2', '2.0', '1.5ct_2.99ct'
+        return 'rc2', '2.0', '1.5ct_2.99ct', '2.0'
     elif 2.50 <= weight and weight < 3.0:
-        return 'rc2', '2.5', '1.5ct_2.99ct'
+        return 'rc2', '2.5', '1.5ct_2.99ct', '2.0'
     elif 3.00 <= weight and weight < 4.0:
-        return 'rc3', '3.0', 'no_result'
+        return 'rc3', '3.0', 'no_result', '3.0'
     elif 4.00 <= weight and weight < 5.0:
-        return 'rc4', '4.0', 'no_result'
+        return 'rc4', '4.0', 'no_result', '4.0'
     elif 5.00 <= weight and weight < 10.0:
-        return 'rc5', '5.0', 'no_result'
+        return 'rc5', '5.0', 'no_result', '5.0'
     else:
-        return 'rct', '10.0', 'no_result'
+        return 'rct', '10.0', 'no_result', '10.0'
 
 def get_shape_key(json):
     if json['shape'] == 'Round':
-        return 'RB'
+        return 'RB', 'BR'
     else:
-        return 'PR'
+        return 'PR', 'PS'
 
 def get_discount_group_key(json):
     if json['shape'] != 'Round' or json['shape'] != 'Princess':
