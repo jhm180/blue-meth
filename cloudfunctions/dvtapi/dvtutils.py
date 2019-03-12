@@ -59,6 +59,21 @@ def check_json_values(json, errs):
             else:
                 errs.append('Invalid datatype for {0} - Expected {1}, received {2}. '.format(key, valid_values[key]['type'], type(json[key])))
 
+def get_params(cursor, key, param_type):
+    if param_type == 'price_params':
+        cursor.execute('SELECT * FROM dvt.priceparams WHERE dvt.priceparams.paramkey = %s', (key,))
+    elif param_type == 'dicount_params':
+        cursor.execute('SELECT * FROM dvt.discounts WHERE dvt.discounts.discountkey = %s', (key,))
+    elif param_type == 'price_list_params':
+        cursor.execute('SELECT * FROM dvt.rappricelist WHERE dvt.rappricelist.pricelistkey = %s', (key,))
+    else: 
+         cursor.execute('SELECT * FROM dvt.shapediscounts WHERE dvt.shapediscounts.shapediscountkey = %s', (key,))
+    result = cursor.fetchone()
+    if result is None:
+        return ("no_result",)
+    else:
+        return result
+
 def get_curve_key(json):
     weight = json['weight']
     if weight >= 0.01 and weight < 0.04:

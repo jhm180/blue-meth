@@ -49,6 +49,7 @@ def dvt_api_staging(request):
     shape_discount_key = '{0}_{1}_{2}_{3}'.format(request_json['color'], request_json['clarity'], shape_disc_weight_group, request_json['shape'])
     discount_key = '{0}_{1}_{2}_{3}_{4}'.format(shape_key, discounts_weight_group, request_json['color'], request_json['clarity'], discount_group_key_suffix) 
     rap_price_list_key = '{0}_{1}_{2}_{3}'.format(rap_price_list_shape_key, request_json['color'], request_json['clarity'], rap_price_list_weight_key)
+    logging.warn(str(price_param_key) +' ---- '+ str(shape_discount_key)  +' ---- '+ discount_key +' ---- '+ rap_price_list_key )
 
 
 ## Do DB Queries
@@ -65,11 +66,16 @@ def dvt_api_staging(request):
 
     with pg_pool.getconn() as conn:
         cursor = conn.cursor()
-        cursor.execute('SELECT * FROM dvt.priceparams WHERE dvt.priceparams.paramkey = %s', (price_param_key,))
-        price_params = cursor.fetchone()
+        price_params = du.get_params(cursor, price_param_key, 'price_params')
+        discount_params = du.get_params(cursor, discount_key, 'discount_params')
+        price_list_params = du.get_params(cursor, rap_price_list_key, 'price_list_params')
+        shape_discount_params = du.get_params(cursor, shape_discount_key, 'shape_discount_params')
         pg_pool.putconn(conn)
-        #pg_pool.close()
-        return str(price_params) +" ---- "+ str(shape_discount_key) +" ---- "+ str(discount_key) +" ---- "+ str(rap_price_list_key) +" ---- vID 49"
+        return "price param key = " + price_param_key + " --- params = " + str(price_params) + "\n" \
+        "discounts param key = " + discount_key + " --- params = " + str(discount_params) + "\n" \
+        "rap price list param key = " + rap_price_list_key + " --- params = " + str(price_list_params) + "\n" \
+        "shape discs param key = " + shape_discount_key + " --- params = " + str(shape_discount_params) + "\n" \
+        + 'v69'
 
 
 ## Do DVT Math
