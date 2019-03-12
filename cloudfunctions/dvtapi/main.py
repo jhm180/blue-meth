@@ -63,12 +63,13 @@ def dvt_api_staging(request):
             # If production settings fail, use local development ones
             db_connect('localhost')
 
-    with pg_pool.getconn().cursor() as cursor:
+    with pg_pool.getconn() as conn:
+        cursor = conn.cursor()
         cursor.execute('SELECT * FROM dvt.priceparams WHERE dvt.priceparams.paramkey = %s', (price_param_key,))
         price_params = cursor.fetchone()
-        cursor.close()
+        pg_pool.putconn(conn)
         #pg_pool.close()
-        return str(price_params) +" ---- "+ str(shape_discount_key) +" ---- "+ str(discount_key) +" ---- "+ str(rap_price_list_key)
+        return str(price_params) +" ---- "+ str(shape_discount_key) +" ---- "+ str(discount_key) +" ---- "+ str(rap_price_list_key) +" ---- vID 49"
 
 
 ## Do DVT Math
