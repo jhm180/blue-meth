@@ -51,6 +51,7 @@ def dvt_api_staging(request):
     rap_price_list_key = '{0}_{1}_{2}_{3}'.format(rap_price_list_shape_key, request_json['color'], request_json['clarity'], rap_price_list_weight_key)
     logging.warn(str(price_param_key) +' ---- '+ str(shape_discount_key)  +' ---- '+ discount_key +' ---- '+ rap_price_list_key )
 
+    as_is_price_param_key, clar_minus_1_param_key, clar_minus_2_param_key, clar_minus_3_param_key, col_minus_1_param_key, col_and_clar_minus_1_param_key = du.get_param_keys(request_json, shape_key, weight_key)
 
 ## Do DB Queries
     global pg_pool

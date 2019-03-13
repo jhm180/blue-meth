@@ -1,4 +1,4 @@
-
+import logging
 
 
 clarity_ranks = {'IF':1, 'VVS1':2, 'VVS2':3, 'VS1':4, 'VS2':5, 'SI1':5, 'SI2':7, 'I1':8, 'I2':9}
@@ -73,6 +73,27 @@ def get_params(cursor, key, param_type):
         return ("no_result",)
     else:
         return result
+
+def get_param_keys(json, shape_key, weight_key):
+    as_is_color = json['color']
+    as_is_color_index = valid_values['color']['allow_vals'].index(as_is_color)
+    as_is_clarity = json['clarity']
+    as_is_clarity_index = valid_values['clarity']['allow_vals'].index(as_is_clarity)
+
+
+    as_is_price_param_key = '{0}_{1}_{2}_{3}'.format(shape_key, json['color'], json['clarity'], weight_key)
+    clar_minus_1_param_key = '{0}_{1}_{2}_{3}'.format(shape_key, json['color'], valid_values['clarity']['allow_vals'][min(as_is_clarity_index + 1,10)], weight_key) 
+    clar_minus_2_param_key = '{0}_{1}_{2}_{3}'.format(shape_key, json['color'], valid_values['clarity']['allow_vals'][min(as_is_clarity_index + 2,10)], weight_key) 
+    clar_minus_3_param_key = '{0}_{1}_{2}_{3}'.format(shape_key, json['color'], valid_values['clarity']['allow_vals'][min(as_is_clarity_index + 3,10)], weight_key) 
+    col_minus_1_param_key = '{0}_{1}_{2}_{3}'.format(shape_key, valid_values['color']['allow_vals'][min(as_is_color_index + 1, 9)], json['clarity'], weight_key)
+    col_and_clar_minus_1_param_key = '{0}_{1}_{2}_{3}'.format(shape_key, valid_values['color']['allow_vals'][min(as_is_color_index + 1, 9)], valid_values['clarity']['allow_vals'][min(as_is_clarity_index + 1,10)], weight_key) 
+    logging.warn('as_is_price_param_key = ' + as_is_price_param_key)
+    logging.warn('clar_minus_1_param_key = ' + clar_minus_1_param_key)
+    logging.warn('clar_minus_2_param_key = ' + clar_minus_2_param_key)
+    logging.warn('clar_minus_3_param_key = ' + clar_minus_3_param_key)
+    logging.warn('col_minus_1_param_key = ' + col_minus_1_param_key)
+    logging.warn('col_and_clar_minus_1_param_key = ' + col_and_clar_minus_1_param_key)
+    return as_is_price_param_key, clar_minus_1_param_key, clar_minus_2_param_key, clar_minus_3_param_key, col_minus_1_param_key, col_and_clar_minus_1_param_key
 
 def get_curve_key(json):
     weight = json['weight']
