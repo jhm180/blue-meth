@@ -7,7 +7,7 @@ color_ranks = {'D':1, 'E':2, 'F':3, 'G':4, 'H':5, 'I':6, 'J':7, 'K':8, 'L':9, 'M
 
 valid_values = {
 'api_key' : {'type':(str), 'max_len':50}, 
-'request_type' : {'type':(str),'allow_vals':['estimate','price','all']}, 
+'request_type' : {'type':(str),'allow_vals':['estimate','sellprice','buyprice','all']}, 
 'user' : {'type':(str), 'max_len':50},
 'shape' : {'type':(str), 'allow_vals':['Round', 'Pear', 'Cushion Modified', 'Princess', 'Emerald', 'Oval', 'Radiant', 'Marquise', 'Heart', 'Asscher', 'Cushion Brilliant', 'Sq. Emerald']},
 'weight' : {'type':(float), 'min':0, 'max':100},
